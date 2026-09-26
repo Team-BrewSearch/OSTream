@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Core/OSTream.Core.csproj" />
+  <Project Path="Frontend/OSTream.Frontend.csproj" />
+</Solution>

@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:OSTream.ViewModels"
+               xmlns:c="using:OSTream.Frontend.Controls"
+              xmlns:comp="using:OSTream.Views.Components"
+              xmlns:fcomp="using:OSTream.Frontend.Views.Components"
+              x:Class="OSTream.Views.Components.AlbumPanelView"
+             x:DataType="vm:AlbumPanelViewModel"
+             IsVisible="{Binding IsVisible}">
+  <UserControl.Styles>
+    <Style Selector="Button.art-button">
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Button.art-button.zoomable">
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.art-button:not(.zoomable)">
+      <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+    <Style Selector="TextBox.filter">
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Padding" Value="32,0,12,0" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+  </UserControl.Styles>
+  <StackPanel>
+    <StackPanel IsVisible="{Binding Inline}">
+      <Border Classes="divider" Margin="0,0,0,26" />
+      <Grid ColumnDefinitions="*,Auto" Margin="0,-12,0,14" IsVisible="{Binding !IsError}">
+        <TextBlock Classes="eyebrow" Text="SELECTED ALBUM" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Classes="text-link" Command="{Binding TopCommand}">
+          <c:IconText Kind="Up" IconSize="12" Text="Back to results" />
+        </Button>
+      </Grid>
+    </StackPanel>
+    <StackPanel IsVisible="{Binding IsLoading}">
+      <Grid Classes="detail" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+        <c:Square Classes="detail-art"><c:Skeleton CornerRadius="10" /></c:Square>
+        <DockPanel Grid.Column="1" Classes="detail-info" Margin="0,2,0,0" LastChildFill="False">
+          <StackPanel DockPanel.Dock="Top" Spacing="10">
+            <c:Skeleton Width="90" Height="9" HorizontalAlignment="Left" />
+            <c:FractionBox Fraction="0.8" MaxChildWidth="420"><c:Skeleton Height="26" /></c:FractionBox>
+            <c:FractionBox Fraction="0.6" MaxChildWidth="300"><c:Skeleton Height="12" /></c:FractionBox>
+          </StackPanel>
+          <c:FractionBox DockPanel.Dock="Bottom" Fraction="0.7" MaxChildWidth="360" VerticalAlignment="Bottom"><c:Skeleton Height="12" /></c:FractionBox>
+        </DockPanel>
+      </Grid>
+      <Border BorderBrush="{DynamicResource Border1}" BorderThickness="0,1,0,0">
+        <ItemsControl ItemsSource="{Binding SkeletonWidths}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:Double">
+              <Grid Height="44" ColumnDefinitions="48,*" Margin="12,0">
+                <c:FractionBox Grid.Column="1" VerticalAlignment="Center" Fraction="{Binding Converter={x:Static c:Converters.Percent}}">
+                  <c:Skeleton Height="10" />
+                </c:FractionBox>
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+    </StackPanel>
+    <c:StateBlock Classes="error" IsVisible="{Binding IsError}" Icon="{Binding ErrorIcon}" Title="Couldn’t load this album" Text="{Binding ErrorText}"
+                  c:Entrance.Kind="fade-up">
+      <Button Classes="btn secondary sm" Command="{Binding RetryCommand}">
+        <c:IconText Kind="Retry" IconSize="13" Text="Try again" />
+      </Button>
+    </c:StateBlock>
+    <StackPanel IsVisible="{Binding IsReady}" c:Entrance.Kind="fade-up">
+      <Grid Classes="detail" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+        <c:Square Classes="detail-art">
+          <Button Classes="art-button" Classes.zoomable="{Binding Zoomable}" Command="{Binding GalleryCommand}" ToolTip.Tip="{Binding GalleryLabel}"
+                  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+            <Panel>
+              <c:ArtView CornerRadius="10" Source="{Binding Cover}" Seed="{Binding Slug}" GlyphSize="40" BoxShadow="{DynamicResource ShadowLg}" />
+              <Border CornerRadius="10" IsHitTestVisible="False">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
+                    <GradientStop Offset="0.6" Color="Transparent" />
+                    <GradientStop Offset="1" Color="{DynamicResource ArtShadeColor}" />
+                  </LinearGradientBrush>
+                </Border.Background>
+              </Border>
+            </Panel>
+          </Button>
+        </c:Square>
+        <DockPanel Grid.Column="1" Classes="detail-info" Margin="0,2,0,0" LastChildFill="False">
+          <StackPanel DockPanel.Dock="Top">
+            <TextBlock Classes="eyebrow" Text="{Binding Eyebrow}" Margin="0,0,0,8" />
+            <TextBlock Classes="detail-title" Text="{Binding Title}" FontWeight="Bold" LetterSpacing="-0.6" TextWrapping="Wrap" Margin="0,0,0,6" />
+            <TextBlock Text="{Binding AltTitles}" IsVisible="{Binding HasAltTitles}" FontSize="12.5" Foreground="{DynamicResource Text3}"
+                       TextWrapping="Wrap" Margin="0,0,0,10" />
+            <ItemsControl ItemsSource="{Binding Tags}" Margin="0,6,0,10">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TagViewModel">
+                  <Border Classes="tag" Classes.accent="{Binding Kind, Converter={x:Static c:Converters.Equal}, ConverterParameter=accent}"
+                          Classes.warn="{Binding Kind, Converter={x:Static c:Converters.Equal}, ConverterParameter=warn}" ToolTip.Tip="{Binding Tip}">
+                    <TextBlock Text="{Binding Text}" />
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock FontSize="12" LineHeight="19" Foreground="{DynamicResource Text3}" TextWrapping="Wrap" fcomp:RichText.Parts="{Binding Meta}" />
+          </StackPanel>
+          <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="8" LineSpacing="8" Margin="0,16,0,0" VerticalAlignment="Bottom">
+            <Button Classes="btn primary" Command="{Binding PlayCommand}"><c:IconText Kind="Play" IconSize="13" Text="Play album" /></Button>
+            <Button Classes="btn secondary" Command="{Binding ShuffleCommand}"><c:IconText Kind="Shuffle" IconSize="13" Text="Shuffle" /></Button>
+            <Button Classes="btn secondary" Command="{Binding DownloadCommand}">
+              <c:IconText Kind="Download" IconSize="13" Text="Download all" Suffix="{Binding DownloadFormat}" />
+            </Button>
+            <Button Classes="btn ghost" AutomationProperties.Name="{Binding FavLabel}" Classes.on="{Binding IsFav}" Command="{Binding ToggleFavoriteCommand}">
+              <Panel>
+                <c:IconText Kind="Heart" IconSize="13" Text="{Binding FavLabel}" IsVisible="{Binding !IsFav}" />
+                <c:IconText Kind="HeartFill" IconSize="13" Text="{Binding FavLabel}" IsVisible="{Binding IsFav}" />
+              </Panel>
+            </Button>
+            <Button Classes="btn ghost icon" Command="{Binding MoreCommand}" CommandParameter="{Binding $self}" ToolTip.Tip="More album options">
+              <c:Icon Kind="More" Size="15" />
+            </Button>
+          </WrapPanel>
+        </DockPanel>
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,10" IsVisible="{Binding ShowFilter}">
+        <Panel Width="240">
+          <TextBox Classes="input filter" Text="{Binding FilterText}" PlaceholderText="{Binding FilterPlaceholder}" />
+          <c:Icon Kind="Search" Size="13" Foreground="{DynamicResource Text3}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" IsHitTestVisible="False" />
+        </Panel>
+        <TextBlock Grid.Column="1" Classes="mono" Text="{Binding FilterCount}" FontSize="11" Foreground="{DynamicResource Text3}"
+                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+      </Grid>
+      <ContentControl Content="{Binding Tracks}" />
+      <StackPanel Margin="0,36,0,0" IsVisible="{Binding HasRelated}">
+        <TextBlock Text="People who viewed this also viewed" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Text2}" Margin="0,0,0,14" />
+        <comp:AlbumGrid Classes="compact" ItemsSource="{Binding Related}" Margin="0,0,0,20" />
+      </StackPanel>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

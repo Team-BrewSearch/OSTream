@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OSTream.ViewModels"
+              xmlns:c="using:OSTream.Frontend.Controls"
+             xmlns:comp="using:OSTream.Views.Components"
+             x:Class="OSTream.Views.Pages.DiscoverView"
+             x:DataType="vm:DiscoverViewModel">
+  <UserControl.Styles>
+    <Style Selector="Run.q">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+  </UserControl.Styles>
+  <StackPanel c:Entrance.Kind="fade-up">
+    <c:SectionHead Margin="0,0,0,16" MinHeight="32">
+      <TextBlock Classes="h2" VerticalAlignment="Center"><Run Text="{Binding HeadPrefix}" /><Run Text="{Binding HeadTitle}" Classes.q="{Binding IsSearch}" /></TextBlock>
+      <Border Classes="segmented small" IsVisible="{Binding !IsSearch}">
+        <ItemsControl ItemsSource="{Binding Tabs}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="2" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ListTabViewModel">
+              <Button Classes="seg" Classes.on="{Binding IsSelected}" Content="{Binding Label}"
+                      Command="{Binding $parent[UserControl].((vm:DiscoverViewModel)DataContext).SelectListCommand}" CommandParameter="{Binding Id}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+      <Button Classes="btn secondary sm" AutomationProperties.Name="Random album" Command="{Binding RandomCommand}" IsVisible="{Binding !IsSearch}">
+        <Panel>
+          <c:IconText Kind="Dice" IconSize="13" Text="Random album" IsVisible="{Binding !IsRolling}" />
+          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsRolling}">
+            <c:Spinner Size="14" Foreground="{DynamicResource Text}" Animate="{Binding IsRolling}" VerticalAlignment="Center" />
+            <TextBlock Text="Rolling…" VerticalAlignment="Center" />
+          </StackPanel>
+        </Panel>
+      </Button>
+      <Button Classes="text-link" IsVisible="{Binding IsSearch}" Command="{Binding BackToDiscoverCommand}">
+        <c:IconText Kind="Back" IconSize="12" Text="Discover" />
+      </Button>
+    </c:SectionHead>
+    <ItemsControl ItemsSource="{Binding Skeletons}" IsVisible="{Binding IsLoading}" Margin="0,0,0,20">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><c:AutoFillPanel /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="x:Int32">
+          <Border Background="{DynamicResource Bg2}" BorderBrush="{DynamicResource Border1}" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
+            <StackPanel>
+              <c:Square><c:Skeleton CornerRadius="0" /></c:Square>
+              <StackPanel Margin="13,11,13,13">
+                <c:Skeleton Height="10" Margin="0,0,0,7" />
+                <c:FractionBox Fraction="0.6"><c:Skeleton Height="8" /></c:FractionBox>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <comp:AlbumGrid ItemsSource="{Binding Cards}" Margin="0,0,0,20" />
+    <Button Classes="btn secondary sm" AutomationProperties.Name="{Binding MoreLabel}" HorizontalAlignment="Center" Margin="0,4,0,30" IsVisible="{Binding HasMore}" Command="{Binding ShowMoreCommand}">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <c:Icon Kind="ChevronDown" Size="13" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding MoreLabel}" VerticalAlignment="Center" />
+        <TextBlock Classes="muted" Text="{Binding MoreLeft}" VerticalAlignment="Center" />
+      </StackPanel>
+    </Button>
+    <c:StateBlock IsVisible="{Binding IsEmpty}" Icon="{Binding EmptyIcon}" Title="{Binding EmptyTitle}" Text="{Binding EmptyText}" c:Entrance.Kind="fade-up" />
+    <c:StateBlock Classes="error" IsVisible="{Binding IsError}" Icon="{Binding ErrorIcon}" Title="{Binding ErrorTitle}" Text="{Binding ErrorText}" c:Entrance.Kind="fade-up">
+      <Button Classes="btn secondary sm" Command="{Binding RetryCommand}">
+        <c:IconText Kind="Retry" IconSize="13" Text="Try again" />
+      </Button>
+    </c:StateBlock>
+    <comp:AlbumPanelView Name="Panel" DataContext="{Binding Panel}" />
+  </StackPanel>
+</UserControl>
