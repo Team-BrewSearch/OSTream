@@ -1,0 +1,36 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OSTream.ViewModels"
+             xmlns:pages="using:OSTream.Views.Pages"
+             xmlns:comp="using:OSTream.Views.Components"
+             xmlns:c="using:OSTream.Controls"
+             x:Class="OSTream.App"
+             Name="OSTream"
+             RequestedThemeVariant="Default">
+  <Application.Styles>
+    <StyleInclude Source="avares://OSTream.Frontend/Themes/Controls.axaml" />
+    <StyleInclude Source="avares://OSTream.Frontend/Themes/Accessibility.axaml" />
+  </Application.Styles>
+  <Application.DataTemplates>
+    <DataTemplate DataType="vm:DiscoverViewModel"><pages:DiscoverView /></DataTemplate>
+    <DataTemplate DataType="vm:AlbumPageViewModel"><pages:AlbumPageView /></DataTemplate>
+    <DataTemplate DataType="vm:FavoritesViewModel"><pages:FavoritesView /></DataTemplate>
+    <DataTemplate DataType="vm:RecentViewModel"><pages:RecentView /></DataTemplate>
+    <DataTemplate DataType="vm:PlaylistsViewModel"><pages:PlaylistsView /></DataTemplate>
+    <DataTemplate DataType="vm:DownloadsViewModel"><pages:DownloadsView /></DataTemplate>
+    <DataTemplate DataType="vm:TrackListViewModel"><comp:TrackListView /></DataTemplate>
+    <DataTemplate DataType="vm:MosaicViewModel">
+      <Panel>
+        <c:ArtView CornerRadius="10" Source="{Binding FirstCover}" Seed="{Binding Seed}" GlyphSize="26" IsVisible="{Binding !IsGrid}" />
+        <Border CornerRadius="10" ClipToBounds="True" IsVisible="{Binding IsGrid}">
+          <UniformGrid Rows="2" Columns="2">
+            <c:ArtView Source="{Binding Cover0}" Seed="{Binding Seed0}" GlyphSize="14" />
+            <c:ArtView Source="{Binding Cover1}" Seed="{Binding Seed1}" GlyphSize="14" />
+            <c:ArtView Source="{Binding Cover2}" Seed="{Binding Seed2}" GlyphSize="14" />
+            <c:ArtView Source="{Binding Cover3}" Seed="{Binding Seed3}" GlyphSize="14" />
+          </UniformGrid>
+        </Border>
+      </Panel>
+    </DataTemplate>
+  </Application.DataTemplates>
+</Application>

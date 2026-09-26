@@ -1,0 +1,189 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OSTream.ViewModels"
+             xmlns:c="using:OSTream.Controls"
+             x:Class="OSTream.Views.Components.JobCardView"
+             x:DataType="vm:JobCardViewModel">
+  <UserControl.Styles>
+    <Style Selector="Border.q-item">
+      <Setter Property="Background" Value="{DynamicResource Bg2}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Border1}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="13" />
+      <Setter Property="Margin" Value="0,0,0,10" />
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <c:BrushFadeTransition Property="BorderBrush" Duration="0:0:0.18" Easing="0.4,0.2,0.2,1" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.q-item:pointerover">
+      <Setter Property="BorderBrush" Value="{DynamicResource Border2}" />
+    </Style>
+    <Style Selector="Border.q-item.removing">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="RenderTransform" Value="scale(0.95)" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.q-item.detailed">
+      <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style Selector="c|ArtView#Art">
+      <Setter Property="Width" Value="42" />
+      <Setter Property="Height" Value="42" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="Border.q-item.detailed c|ArtView#Art">
+      <Setter Property="Width" Value="56" />
+      <Setter Property="Height" Value="56" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="TextBlock#TitleText">
+      <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="TextBlock#SubText">
+      <Setter Property="FontSize" Value="10.5" />
+    </Style>
+    <Style Selector="Border.q-item.detailed TextBlock#TitleText">
+      <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="Border.q-item.detailed TextBlock#SubText">
+      <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="Button.q-toggle">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+      <Setter Property="Transitions" Value="{StaticResource FastTransitions}" />
+    </Style>
+    <Style Selector="Button.q-toggle:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Bg3}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+    <Style Selector="c|ProgressFill#Bar">
+      <Setter Property="Track" Value="{DynamicResource Bg3}" />
+      <Setter Property="Fill" Value="{DynamicResource AccentGradient}" />
+      <Setter Property="FillShadow" Value="{DynamicResource Glow8}" />
+    </Style>
+    <Style Selector="Border.queued c|ProgressFill#Bar, Border.canceled c|ProgressFill#Bar">
+      <Setter Property="Fill" Value="{DynamicResource Border2}" />
+      <Setter Property="FillShadow" Value="{DynamicResource NoShadow}" />
+    </Style>
+    <Style Selector="Border.done c|ProgressFill#Bar">
+      <Setter Property="Fill" Value="{DynamicResource Green}" />
+      <Setter Property="FillShadow" Value="{DynamicResource GlowGreen}" />
+    </Style>
+    <Style Selector="Border.partial c|ProgressFill#Bar">
+      <Setter Property="Fill" Value="{DynamicResource Amber}" />
+      <Setter Property="FillShadow" Value="{DynamicResource NoShadow}" />
+    </Style>
+    <Style Selector="Border.error c|ProgressFill#Bar">
+      <Setter Property="Track" Value="{DynamicResource RedSoft}" />
+      <Setter Property="Fill" Value="{DynamicResource Red}" />
+      <Setter Property="FillShadow" Value="{DynamicResource NoShadow}" />
+    </Style>
+    <Style Selector="TextBlock#Status">
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="Border.running TextBlock#Status">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+    <Style Selector="Border.done TextBlock#Status">
+      <Setter Property="Foreground" Value="{DynamicResource Green}" />
+    </Style>
+    <Style Selector="Border.error TextBlock#Status">
+      <Setter Property="Foreground" Value="{DynamicResource Red}" />
+    </Style>
+    <Style Selector="Border.partial TextBlock#Status">
+      <Setter Property="Foreground" Value="{DynamicResource Amber}" />
+    </Style>
+    <Style Selector="Grid.q-track c|Icon">
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="Grid.q-track TextBlock.dot">
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="Grid.q-track.done c|Icon">
+      <Setter Property="Foreground" Value="{DynamicResource Green}" />
+    </Style>
+    <Style Selector="Grid.q-track.error c|Icon">
+      <Setter Property="Foreground" Value="{DynamicResource Red}" />
+    </Style>
+    <Style Selector="Grid.q-track TextBlock.nm">
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+    </Style>
+    <Style Selector="Grid.q-track.active TextBlock.nm">
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+  </UserControl.Styles>
+  <Border Classes="q-item" Classes.detailed="{Binding Detailed}" Classes.removing="{Binding IsRemoving}" c:Entrance.Kind="fade-up"
+          Classes.queued="{Binding StatusClass, Converter={x:Static c:Converters.Equal}, ConverterParameter=queued}"
+          Classes.running="{Binding StatusClass, Converter={x:Static c:Converters.Equal}, ConverterParameter=running}"
+          Classes.done="{Binding StatusClass, Converter={x:Static c:Converters.Equal}, ConverterParameter=done}"
+          Classes.partial="{Binding StatusClass, Converter={x:Static c:Converters.Equal}, ConverterParameter=partial}"
+          Classes.error="{Binding StatusClass, Converter={x:Static c:Converters.Equal}, ConverterParameter=error}"
+          Classes.canceled="{Binding StatusClass, Converter={x:Static c:Converters.Equal}, ConverterParameter=canceled}">
+    <StackPanel>
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,11">
+        <c:ArtView Name="Art" Source="{Binding Cover}" Seed="{Binding Title}" GlyphSize="16"
+                   BoxShadow="{DynamicResource ShadowSm}" VerticalAlignment="Top" />
+        <StackPanel Grid.Column="1" Margin="11,0" VerticalAlignment="Center" Spacing="2">
+          <TextBlock Name="TitleText" Classes="ellipsis" Text="{Binding Title}" FontWeight="SemiBold" ToolTip.Tip="{Binding Title}" />
+          <TextBlock Name="SubText" Classes="ellipsis mono" Text="{Binding Sub}" Foreground="{DynamicResource Text3}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Top">
+          <Button Classes="q-toggle" IsVisible="{Binding CanCancel}" Command="{Binding CancelCommand}" ToolTip.Tip="Cancel download">
+            <c:Icon Kind="X" Size="14" />
+          </Button>
+          <Button Classes="q-toggle" IsVisible="{Binding CanOpenFolder}" Command="{Binding OpenFolderCommand}" ToolTip.Tip="Open folder">
+            <c:Icon Kind="Folder" Size="14" />
+          </Button>
+          <Button Classes="q-toggle" IsVisible="{Binding CanRetry}" Command="{Binding RetryCommand}" ToolTip.Tip="Retry failed tracks">
+            <c:Icon Kind="Retry" Size="14" />
+          </Button>
+          <Button Classes="q-toggle" IsVisible="{Binding CanRemove}" Command="{Binding RemoveCommand}" ToolTip.Tip="Remove from list">
+            <c:Icon Kind="X" Size="14" />
+          </Button>
+        </StackPanel>
+      </Grid>
+      <c:ProgressFill Name="Bar" Height="4" Margin="0,0,0,8" Value="{Binding Progress, Converter={x:Static c:Converters.Percent}}" Indeterminate="{Binding IsStarting}" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Name="Status" Classes="ellipsis mono" Text="{Binding StatusText}" FontSize="10.5" ToolTip.Tip="{Binding StatusTip}" />
+        <TextBlock Grid.Column="1" Classes="mono" Text="{Binding SideText}" FontSize="10.5" Margin="10,0,0,0" Foreground="{DynamicResource Text3}" />
+      </Grid>
+      <StackPanel IsVisible="{Binding Detailed}">
+        <Button Classes="text-link" HorizontalAlignment="Left" Margin="0,10,0,0" Command="{Binding ToggleDetailsCommand}">
+          <c:IconText Kind="ChevronDown" IconSize="12" Text="{Binding DetailsLabel}" />
+        </Button>
+        <Border IsVisible="{Binding IsExpanded}" Margin="0,12,0,0" Padding="0,8,0,0" BorderBrush="{DynamicResource Border1}" BorderThickness="0,1,0,0">
+          <ScrollViewer MaxHeight="320" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding TrackLines}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:JobTrackLine">
+                  <Grid Classes="q-track" ColumnDefinitions="18,*,Auto" Margin="4,5"
+                        Classes.done="{Binding State, Converter={x:Static c:Converters.Equal}, ConverterParameter=done}"
+                        Classes.error="{Binding State, Converter={x:Static c:Converters.Equal}, ConverterParameter=error}"
+                        Classes.active="{Binding State, Converter={x:Static c:Converters.Equal}, ConverterParameter=active}">
+                    <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+                      <c:Icon Kind="{Binding Icon}" Size="11" IsVisible="{Binding HasIcon}" />
+                      <c:Spinner Size="11" IsVisible="{Binding Busy}" Animate="{Binding Busy}" />
+                      <TextBlock Classes="dot" Text="•" FontSize="12" IsVisible="{Binding IsQueued}" />
+                    </Panel>
+                    <TextBlock Grid.Column="1" Classes="nm ellipsis" FontSize="12" Margin="10,0" ToolTip.Tip="{Binding Name}"><Run Text="{Binding Name}" /><Run
+                      Text="{Binding Error, StringFormat='  {0}', TargetNullValue=''}" Foreground="{DynamicResource Red}" FontSize="11" /></TextBlock>
+                    <TextBlock Grid.Column="2" Classes="mono" Text="{Binding Value}" FontSize="10.5" Foreground="{DynamicResource Text3}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

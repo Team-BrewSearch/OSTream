@@ -1,0 +1,290 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OSTream.ViewModels"
+             xmlns:c="using:OSTream.Controls"
+             x:Class="OSTream.Views.Shell.PlayerBarView"
+             x:DataType="vm:PlayerBarViewModel">
+  <UserControl.Styles>
+    <Style Selector="c|BarLayout#Row">
+      <Setter Property="Spacing" Value="20" />
+      <Setter Property="Margin" Value="20,1,20,0" />
+    </Style>
+    <Style Selector="Grid#NowPlaying">
+      <Setter Property="Width" Value="280" />
+    </Style>
+    <Style Selector="Grid#Volume">
+      <Setter Property="Width" Value="150" />
+    </Style>
+    <Style Selector="Button#Thumb">
+      <Setter Property="Width" Value="44" />
+      <Setter Property="Height" Value="44" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="Button#Thumb:disabled">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+    <Style Selector="c|EqBars#Eq">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="Transitions">
+        <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.18" /></Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="c|EqBars#Eq.playing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button#TitleButton">
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="Button#TitleButton:disabled">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+    <Style Selector="Button#TitleButton:pointerover:not(:disabled) TextBlock">
+      <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+    <Style Selector="Button#Like">
+      <Setter Property="Width" Value="30" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+      <Setter Property="Transitions" Value="{StaticResource FastTransitions}" />
+    </Style>
+    <Style Selector="Button#Like:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+      <Setter Property="Background" Value="{DynamicResource Bg3}" />
+    </Style>
+    <Style Selector="Button#Like.on, Button#Like.on:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+    <Style Selector="StackPanel#Controls > Button">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <c:BrushFadeTransition Property="Background" Duration="0:0:0.12" Easing="0.4,0.2,0.2,1" />
+          <c:BrushFadeTransition Property="Foreground" Duration="0:0:0.12" Easing="0.4,0.2,0.2,1" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="0.4,0.2,0.2,1" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="StackPanel#Controls > Button:pointerover:not(:disabled)">
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+      <Setter Property="Background" Value="{DynamicResource Bg3}" />
+    </Style>
+    <Style Selector="StackPanel#Controls > Button.mode">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="StackPanel#Controls > Button.mode.on, StackPanel#Controls > Button.mode.on:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+    <Style Selector="Border.mode-dot">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.mode.on Border.mode-dot">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="StackPanel#Controls > Button.play">
+      <Setter Property="Width" Value="42" />
+      <Setter Property="Height" Value="42" />
+      <Setter Property="CornerRadius" Value="21" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+    </Style>
+    <Style Selector="StackPanel#Controls > Button.play /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BoxShadow" Value="{DynamicResource Glow20}" />
+    </Style>
+    <Style Selector="StackPanel#Controls > Button.play:pointerover:not(:disabled)">
+      <Setter Property="Background" Value="{DynamicResource Accent2}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+      <Setter Property="RenderTransform" Value="scale(1.04)" />
+    </Style>
+    <Style Selector="StackPanel#Controls > Button.play:pointerover:not(:disabled) /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BoxShadow" Value="{DynamicResource Glow28}" />
+    </Style>
+    <Style Selector="StackPanel#Controls > Button.play c|Spinner">
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+    </Style>
+    <Style Selector="c|SliderBar">
+      <Setter Property="Height" Value="16" />
+      <Setter Property="TrackBrush" Value="{DynamicResource Bg3}" />
+      <Setter Property="BufferedBrush" Value="{DynamicResource Border2}" />
+      <Setter Property="FillBrush" Value="{DynamicResource AccentGradient}" />
+      <Setter Property="FillShadow" Value="{DynamicResource Glow12}" />
+      <Setter Property="ThumbShadow" Value="{DynamicResource SliderThumbShadow}" />
+      <Setter Property="TipBackground" Value="{DynamicResource Popover}" />
+      <Setter Property="TipForeground" Value="{DynamicResource Text}" />
+      <Setter Property="TipShadow" Value="{DynamicResource ShadowPop}" />
+    </Style>
+    <Style Selector="c|SliderBar.volume">
+      <Setter Property="TrackHeight" Value="4" />
+      <Setter Property="FillBrush" Value="{DynamicResource Text2}" />
+      <Setter Property="FillShadow" Value="{DynamicResource NoShadow}" />
+    </Style>
+    <Style Selector="c|SliderBar.volume:pointerover, c|SliderBar.volume.dragging">
+      <Setter Property="FillBrush" Value="{DynamicResource Accent}" />
+    </Style>
+    <Style Selector="TextBlock.time">
+      <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+      <Setter Property="MinWidth" Value="38" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button#Mute">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="Button#Mute:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+      <Setter Property="Background" Value="{DynamicResource Bg3}" />
+    </Style>
+    <Style Selector="Button#Queue">
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Border1}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+      <Setter Property="Transitions" Value="{StaticResource ButtonTransitions}" />
+    </Style>
+    <Style Selector="Button#Queue:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Border2}" />
+      <Setter Property="Background" Value="{DynamicResource Bg2}" />
+    </Style>
+    <Style Selector="Button#Queue.on">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentLine}" />
+      <Setter Property="Background" Value="{DynamicResource AccentSofter}" />
+    </Style>
+    <Style Selector=":is(Control).w1100 Grid#NowPlaying">
+      <Setter Property="Width" Value="220" />
+    </Style>
+    <Style Selector=":is(Control).w1100 Grid#Volume">
+      <Setter Property="Width" Value="120" />
+    </Style>
+    <Style Selector=":is(Control).compact c|BarLayout#Row">
+      <Setter Property="Spacing" Value="14" />
+      <Setter Property="Margin" Value="14,1,14,0" />
+    </Style>
+    <Style Selector=":is(Control).compact Grid#NowPlaying">
+      <Setter Property="Width" Value="200" />
+    </Style>
+    <Style Selector=":is(Control).compact Button.mode, :is(Control).compact Grid#Volume, :is(Control).compact Panel#LikeSlot">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector=":is(Control).mobile Grid#NowPlaying">
+      <Setter Property="Width" Value="NaN" />
+      <Setter Property="c:BarLayout.Flex" Value="True" />
+    </Style>
+    <Style Selector=":is(Control).mobile Grid#Progress, :is(Control).mobile TextBlock#QueueLabel">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="c|SliderBar#MiniSeek">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector=":is(Control).mobile c|SliderBar#MiniSeek">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </UserControl.Styles>
+  <Panel Height="76" Background="{DynamicResource GlassStrong}">
+    <Border BorderBrush="{DynamicResource Border1}" BorderThickness="0,1,0,0" IsHitTestVisible="False" />
+    <c:BarLayout Name="Row">
+      <Grid Name="NowPlaying" ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+        <Button Name="Thumb" Command="{Binding OpenAlbumCommand}" IsEnabled="{Binding CanOpenAlbum}" ToolTip.Tip="{Binding AlbumTip}"
+                AutomationProperties.Name="{Binding AlbumTip}">
+          <Panel>
+            <c:ArtView Width="44" Height="44" CornerRadius="8" Source="{Binding Thumb}" Seed="{Binding ThumbSeed}" GlyphSize="16" BoxShadow="{DynamicResource ShadowSm}" />
+            <Border CornerRadius="8" IsHitTestVisible="False">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
+                  <GradientStop Offset="0.4" Color="Transparent" />
+                  <GradientStop Offset="1" Color="{DynamicResource ArtShadeColor}" />
+                </LinearGradientBrush>
+              </Border.Background>
+            </Border>
+            <c:EqBars Name="Eq" Classes.playing="{Binding IsPlaying}" Animate="{Binding IsPlaying}" Foreground="White"
+                      Height="10" Period="0.9" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="5,0,0,5" />
+          </Panel>
+        </Button>
+        <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+          <Button Name="TitleButton" Command="{Binding OpenAlbumCommand}" IsEnabled="{Binding CanOpenAlbum}" ToolTip.Tip="{Binding AlbumTip}" Margin="0,0,0,2">
+            <TextBlock Classes="ellipsis" Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" LineHeight="16.25" />
+          </Button>
+          <TextBlock Classes="ellipsis mono" Text="{Binding Sub}" FontSize="10.5" Foreground="{DynamicResource Text3}" LineHeight="13.65" />
+        </StackPanel>
+        <Panel Name="LikeSlot" Grid.Column="2">
+          <Button Name="Like" Classes.on="{Binding IsLiked}" IsVisible="{Binding HasTrack}" Command="{Binding LikeCommand}"
+                  ToolTip.Tip="{Binding LikeLabel}" AutomationProperties.Name="{Binding LikeLabel}">
+            <Panel>
+              <c:Icon Kind="Heart" Size="14" IsVisible="{Binding !IsLiked}" />
+              <c:Icon Kind="HeartFill" Size="14" IsVisible="{Binding IsLiked}" />
+            </Panel>
+          </Button>
+        </Panel>
+      </Grid>
+      <StackPanel Name="Controls" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+        <Button Classes="mode" Classes.on="{Binding Shuffle}" Command="{Binding ToggleShuffleCommand}" ToolTip.Tip="Shuffle (S)">
+          <Panel>
+            <c:Icon Kind="Shuffle" Size="15" />
+            <Border Classes="mode-dot" Width="4" Height="4" CornerRadius="2" Background="{Binding $parent[Button].Foreground}"
+                    VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,-6" />
+          </Panel>
+        </Button>
+        <Button Command="{Binding PrevCommand}" IsEnabled="{Binding HasTrack}" ToolTip.Tip="Previous (Shift+←)">
+          <c:Icon Kind="Prev" Size="17" />
+        </Button>
+        <Button Classes="play" Command="{Binding ToggleCommand}" IsEnabled="{Binding HasTrack}" ToolTip.Tip="Play / pause (Space)"
+                AutomationProperties.Name="{Binding PlayLabel}">
+          <Panel>
+            <c:Icon Kind="{Binding PlayIcon}" Size="17" IsVisible="{Binding !IsLoading}" />
+            <c:Spinner Size="16" IsVisible="{Binding IsLoading}" Animate="{Binding IsLoading}" />
+          </Panel>
+        </Button>
+        <Button Command="{Binding NextCommand}" IsEnabled="{Binding CanNext}" ToolTip.Tip="Next (Shift+→)">
+          <c:Icon Kind="Next" Size="17" />
+        </Button>
+        <Button Classes="mode" Classes.on="{Binding RepeatOn}" Command="{Binding CycleRepeatCommand}" ToolTip.Tip="{Binding RepeatTip}">
+          <Panel>
+            <c:Icon Kind="{Binding RepeatIcon}" Size="15" />
+            <Border Classes="mode-dot" Width="4" Height="4" CornerRadius="2" Background="{Binding $parent[Button].Foreground}"
+                    VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,-6" />
+          </Panel>
+        </Button>
+      </StackPanel>
+      <Grid Name="Progress" c:BarLayout.Flex="True" ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+        <TextBlock Classes="time" Text="{Binding CurrentTime}" />
+        <c:SliderBar Name="Seek" Grid.Column="1" Margin="11,0" Value="{Binding SeekValue}" Buffered="{Binding Buffered}"
+                     IsEnabled="{Binding HasTrack}" Step="0.02" AutomationProperties.Name="Seek" />
+        <TextBlock Grid.Column="2" Classes="time" Text="{Binding TotalTime}" TextAlignment="Right" />
+      </Grid>
+      <Grid Name="Volume" ColumnDefinitions="Auto,*" VerticalAlignment="Center" Background="Transparent">
+        <Button Name="Mute" Command="{Binding ToggleMuteCommand}" ToolTip.Tip="Mute (M)" AutomationProperties.Name="{Binding MuteLabel}">
+          <c:Icon Kind="{Binding VolumeIcon}" Size="15" />
+        </Button>
+        <c:SliderBar Name="VolumeSlider" Grid.Column="1" Classes="volume" Margin="6,0,0,0" Value="{Binding Volume}" AutomationProperties.Name="Volume" />
+      </Grid>
+      <Button Name="Queue" Classes.on="{Binding IsQueueOn}" Command="{Binding ToggleQueueCommand}" VerticalAlignment="Center" ToolTip.Tip="Toggle queue (Q)">
+        <StackPanel Orientation="Horizontal" Spacing="7">
+          <c:Icon Kind="Queue" Size="14" />
+          <TextBlock Name="QueueLabel" Text="Queue ·" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding QueueCount}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </c:BarLayout>
+    <c:SliderBar Name="MiniSeek" VerticalAlignment="Top" Margin="0,-8,0,0" Value="{Binding SeekValue}" Buffered="{Binding Buffered}"
+                 IsEnabled="{Binding HasTrack}" Step="0.02" />
+  </Panel>
+</UserControl>

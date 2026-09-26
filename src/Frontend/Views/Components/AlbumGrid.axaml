@@ -1,0 +1,64 @@
+<ItemsControl xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:OSTream.ViewModels"
+              xmlns:c="using:OSTream.Controls"
+              x:Class="OSTream.Views.Components.AlbumGrid">
+  <ItemsControl.Styles>
+    <Style Selector="c|AutoFillPanel">
+      <Setter Property="MinItemWidth" Value="150" />
+      <Setter Property="ColumnSpacing" Value="16" />
+      <Setter Property="RowSpacing" Value="16" />
+    </Style>
+    <Style Selector=":is(ItemsControl).compact c|AutoFillPanel">
+      <Setter Property="MinItemWidth" Value="128" />
+      <Setter Property="ColumnSpacing" Value="14" />
+      <Setter Property="RowSpacing" Value="14" />
+    </Style>
+    <Style Selector=":is(Control).mobile c|AutoFillPanel">
+      <Setter Property="MinItemWidth" Value="130" />
+      <Setter Property="ColumnSpacing" Value="12" />
+      <Setter Property="RowSpacing" Value="12" />
+    </Style>
+  </ItemsControl.Styles>
+  <ItemsControl.ItemsPanel>
+    <ItemsPanelTemplate><c:AutoFillPanel /></ItemsPanelTemplate>
+  </ItemsControl.ItemsPanel>
+  <ItemsControl.ItemTemplate>
+    <DataTemplate x:DataType="vm:AlbumCardViewModel">
+      <Panel Classes="card" Classes.sel="{Binding IsSelected}" c:Entrance.Delay="{Binding EntranceDelay}" c:Entrance.Kind="fade-up">
+        <Border Classes="album-card">
+          <Button Classes="album-link" Command="{Binding OpenCommand}" ToolTip.Tip="{Binding Title}">
+            <StackPanel>
+              <Panel>
+                <c:Square><c:ArtView Source="{Binding Thumb}" Seed="{Binding Slug}" Sharpen="True" /></c:Square>
+                <Border Classes="album-shade" IsHitTestVisible="False">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
+                      <GradientStop Offset="0.5" Color="Transparent" />
+                      <GradientStop Offset="1" Color="{DynamicResource ArtShadeColor}" />
+                    </LinearGradientBrush>
+                  </Border.Background>
+                </Border>
+              </Panel>
+              <StackPanel Margin="13,11,13,13" Spacing="3">
+                <TextBlock Classes="card-title ellipsis" Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" />
+                <TextBlock Classes="ellipsis mono" Text="{Binding Subtitle}" FontSize="10.5" Foreground="{DynamicResource Text3}" MinHeight="15" />
+              </StackPanel>
+            </StackPanel>
+          </Button>
+        </Border>
+        <c:Square VerticalAlignment="Top" Margin="1"><Panel>
+          <Border Classes="album-rank" IsVisible="{Binding HasRank}" IsHitTestVisible="False">
+            <TextBlock Classes="mono" Text="{Binding Rank}" FontSize="10.5" FontWeight="SemiBold" Foreground="White" />
+          </Border>
+          <Button Classes="album-play" Classes.busy="{Binding IsBusy}" Command="{Binding PlayCommand}" ToolTip.Tip="{Binding Title, StringFormat='Play {0}'}">
+            <Panel>
+              <c:Icon Kind="Play" Size="12" IsVisible="{Binding !IsBusy}" />
+              <c:Spinner Size="14" IsVisible="{Binding IsBusy}" Animate="{Binding IsBusy}" />
+            </Panel>
+          </Button>
+        </Panel></c:Square>
+      </Panel>
+    </DataTemplate>
+  </ItemsControl.ItemTemplate>
+</ItemsControl>

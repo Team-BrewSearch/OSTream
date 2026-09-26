@@ -1,0 +1,212 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OSTream.ViewModels"
+             xmlns:c="using:OSTream.Controls"
+             x:Class="OSTream.Views.Components.TrackListView"
+             x:DataType="vm:TrackListViewModel">
+  <UserControl.Styles>
+    <Style Selector=":is(Control).c-idx"><Setter Property="Width" Value="36" /></Style>
+    <Style Selector=":is(Control).c-cd"><Setter Property="Width" Value="28" /><Setter Property="Margin" Value="12,0,0,0" /></Style>
+    <Style Selector=":is(Control).c-title"><Setter Property="Margin" Value="12,0,0,0" /></Style>
+    <Style Selector=":is(Control).c-fmt"><Setter Property="Width" Value="120" /><Setter Property="Margin" Value="12,0,0,0" /></Style>
+    <Style Selector=":is(Control).c-dur"><Setter Property="Width" Value="56" /><Setter Property="Margin" Value="12,0,0,0" /></Style>
+    <Style Selector=":is(Control).c-actions"><Setter Property="Width" Value="92" /><Setter Property="Margin" Value="12,0,0,0" /></Style>
+    <Style Selector=":is(Control).compact :is(Control).c-idx"><Setter Property="Width" Value="32" /></Style>
+    <Style Selector=":is(Control).compact :is(Control).c-cd"><Setter Property="Width" Value="24" /></Style>
+    <Style Selector=":is(Control).compact :is(Control).c-fmt"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector=":is(Control).compact :is(Control).c-dur"><Setter Property="Width" Value="52" /></Style>
+    <Style Selector=":is(Control).compact :is(Control).c-actions"><Setter Property="Width" Value="88" /></Style>
+    <Style Selector=":is(Control).mobile :is(Control).c-cd"><Setter Property="IsVisible" Value="False" /></Style>
+    <Style Selector="Grid.track-head TextBlock">
+      <Setter Property="FontSize" Value="10.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="LetterSpacing" Value="0.84" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.track-row">
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+      <Setter Property="Transitions">
+        <Transitions><c:BrushFadeTransition Property="Background" Duration="0:0:0.12" Easing="0.4,0.2,0.2,1" /></Transitions>
+      </Setter>
+    </Style>
+    <Style Selector=":is(UserControl).has-album Button.track-row">
+      <Setter Property="MinHeight" Value="52" />
+    </Style>
+    <Style Selector="Button.track-row:pointerover, Button.track-row:focus-visible">
+      <Setter Property="Background" Value="{DynamicResource Bg2}" />
+    </Style>
+    <Style Selector="Button.track-row:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BoxShadow" Value="inset 0 0 0 1.5 #59a78bfa" />
+    </Style>
+    <Style Selector="Button.track-row.playing">
+      <Setter Property="Background" Value="{DynamicResource TrackPlayingGradient}" />
+    </Style>
+    <Style Selector="Button.track-row.playing:pointerover">
+      <Setter Property="Background" Value="{DynamicResource TrackPlayingHoverGradient}" />
+    </Style>
+    <Style Selector="Border.row-indicator">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.track-row.playing Border.row-indicator">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Button.track-row :is(Control).idx-play, Button.track-row :is(Control).idx-pause, Button.track-row c|EqBars, Button.track-row c|Spinner">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.track-row:pointerover TextBlock.num, Button.track-row:focus-visible TextBlock.num, Button.track-row.playing TextBlock.num">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.track-row:pointerover:not(.playing) :is(Control).idx-play, Button.track-row:focus-visible:not(.playing) :is(Control).idx-play">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Button.track-row.playing c|EqBars">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Button.track-row.playing:pointerover c|EqBars">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.track-row.playing:pointerover:not(.paused) :is(Control).idx-pause">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Button.track-row.playing.paused:pointerover :is(Control).idx-play">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Button.track-row.loading c|EqBars, Button.track-row.loading :is(Control).idx-play, Button.track-row.loading :is(Control).idx-pause">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.track-row.loading c|Spinner">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="TextBlock.dur">
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+    </Style>
+    <Style Selector="Button.track-row.playing TextBlock.t, Button.track-row.playing TextBlock.dur">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+    <Style Selector="Button.album-link">
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.album-link:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+    </Style>
+    <Style Selector="Button.album-link:pointerover TextBlock">
+      <Setter Property="TextDecorations" Value="Underline" />
+    </Style>
+    <Style Selector="c|ProgressFill.row-progress">
+      <Setter Property="Height" Value="0" />
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="Transitions">
+        <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.18" /></Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.track-row.playing c|ProgressFill.row-progress">
+      <Setter Property="Height" Value="2" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Run.fallback">
+      <Setter Property="Foreground" Value="{DynamicResource Amber}" />
+    </Style>
+    <Style Selector="Run.dim">
+      <Setter Property="Foreground" Value="{DynamicResource Text3Dim}" />
+    </Style>
+    <Style Selector="Button.row-action">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="Transitions" Value="{StaticResource FastTransitions}" />
+    </Style>
+    <Style Selector="Button.track-row:pointerover Button.row-action, Button.track-row:focus-within Button.row-action, Button.track-row.playing Button.row-action, Button.row-action.on, Button.row-action.expanded">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.row-action:pointerover, Button.row-action.expanded">
+      <Setter Property="Background" Value="{DynamicResource Bg3}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+    <Style Selector="Button.row-action.on, Button.row-action.on:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+  </UserControl.Styles>
+  <Border BorderBrush="{DynamicResource Border1}" BorderThickness="0,1,0,0">
+    <StackPanel>
+      <Border BorderBrush="{DynamicResource Border1}" BorderThickness="0,0,0,1" Padding="12,10,12,8" Margin="0,0,0,2">
+        <Grid Classes="track-head" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+          <TextBlock Grid.Column="0" Classes="c-idx" Text="#" TextAlignment="Center" />
+          <TextBlock Grid.Column="1" Classes="c-cd" Text="CD" TextAlignment="Center" IsVisible="{Binding HasCd}" />
+          <TextBlock Grid.Column="2" Classes="c-title" Text="TITLE" />
+          <TextBlock Grid.Column="3" Classes="c-fmt" Text="{Binding MetaLabel}" />
+          <TextBlock Grid.Column="4" Classes="c-dur" Text="LENGTH" TextAlignment="Right" />
+          <Panel Grid.Column="5" Classes="c-actions" />
+        </Grid>
+      </Border>
+      <TextBlock Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}" Margin="12,24" FontSize="12" Foreground="{DynamicResource Text3}" TextWrapping="Wrap" />
+      <ItemsControl Name="Rows" ItemsSource="{Binding Rows}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:TrackRowViewModel">
+            <Button Classes="track-row" AutomationProperties.Name="{Binding Title}" IsVisible="{Binding IsVisible}" Command="{Binding ActivateCommand}"
+                    Classes.playing="{Binding IsPlaying}" Classes.paused="{Binding IsPaused}" Classes.loading="{Binding IsLoading}">
+              <Panel>
+                <Border Classes="row-indicator" Width="3" CornerRadius="0,3,3,0" Background="{DynamicResource Accent}" BoxShadow="{DynamicResource Glow10}"
+                        HorizontalAlignment="Left" Margin="-12,9,0,9" />
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" VerticalAlignment="Center">
+                  <Panel Grid.Column="0" Classes="c-idx" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Classes="num mono" Text="{Binding Number}" FontSize="11" Foreground="{DynamicResource Text3}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <c:EqBars Height="12" Foreground="{DynamicResource Accent}" Animate="{Binding !IsPaused}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <c:Spinner Size="12" Animate="{Binding IsLoading}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <c:Icon Classes="idx-play" Kind="Play" Size="11" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <c:Icon Classes="idx-pause" Kind="Pause" Size="11" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Panel>
+                  <TextBlock Grid.Column="1" Classes="c-cd mono" Text="{Binding Cd}" IsVisible="{Binding HasCd}" FontSize="10" Opacity="0.8"
+                             Foreground="{DynamicResource Text3}" TextAlignment="Center" VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="2" Classes="c-title" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Classes="t ellipsis" Text="{Binding Title}" ToolTip.Tip="{Binding Title}" FontSize="13" FontWeight="Medium" LineHeight="17" />
+                    <Button Classes="album-link" IsVisible="{Binding ShowAlbum}" Command="{Binding OpenAlbumCommand}">
+                      <TextBlock Classes="ellipsis" Text="{Binding AlbumTitle}" FontSize="11" LineHeight="14" />
+                    </Button>
+                    <c:ProgressFill Classes="row-progress" MaxWidth="280" HorizontalAlignment="Left" Value="{Binding Progress}" Duration="0:0:0.25"
+                                    Track="{DynamicResource Bg3}" Fill="{DynamicResource AccentGradient}" FillShadow="{DynamicResource Glow6}" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="3" Classes="c-fmt mono ellipsis" FontSize="10.5" Foreground="{DynamicResource Text3}" VerticalAlignment="Center"
+                             ToolTip.Tip="{Binding FallbackTip}"><Run Text="{Binding FormatMain}" Classes.fallback="{Binding IsFallback}" /><Run Classes="dim" Text="{Binding FormatSize}" /></TextBlock>
+                  <TextBlock Grid.Column="4" Classes="c-dur dur mono" Text="{Binding Duration}" FontSize="11"
+                             TextAlignment="Right" VerticalAlignment="Center" />
+                  <Panel Grid.Column="5" Classes="c-actions" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
+                      <Button Classes="row-action" Classes.on="{Binding IsFav}" Command="{Binding ToggleFavoriteCommand}" ToolTip.Tip="{Binding FavLabel}">
+                        <Panel>
+                          <c:Icon Kind="Heart" Size="12" IsVisible="{Binding !IsFav}" />
+                          <c:Icon Kind="HeartFill" Size="12" IsVisible="{Binding IsFav}" />
+                        </Panel>
+                      </Button>
+                      <Button Classes="row-action" Command="{Binding DownloadCommand}" ToolTip.Tip="{Binding DownloadLabel}">
+                        <c:Icon Kind="Download" Size="12" />
+                      </Button>
+                      <Button Classes="row-action" Command="{Binding MoreCommand}" CommandParameter="{Binding $self}" ToolTip.Tip="More options">
+                        <c:Icon Kind="More" Size="14" />
+                      </Button>
+                    </StackPanel>
+                  </Panel>
+                </Grid>
+              </Panel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </Border>
+</UserControl>

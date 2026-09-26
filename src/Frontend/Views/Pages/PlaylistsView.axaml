@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OSTream.ViewModels"
+             xmlns:c="using:OSTream.Controls"
+             xmlns:comp="using:OSTream.Views.Components"
+             x:Class="OSTream.Views.Pages.PlaylistsView"
+             x:DataType="vm:PlaylistsViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.new-playlist">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Transitions" Value="{StaticResource ButtonTransitions}" />
+    </Style>
+    <Style Selector="Button.new-playlist c|DashedBorder">
+      <Setter Property="Stroke" Value="{DynamicResource Border2}" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.new-playlist:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+    <Style Selector="Button.new-playlist:pointerover c|DashedBorder">
+      <Setter Property="Stroke" Value="{DynamicResource Accent}" />
+      <Setter Property="Background" Value="{DynamicResource AccentSofter}" />
+    </Style>
+  </UserControl.Styles>
+  <Panel>
+    <StackPanel IsVisible="{Binding IsOverview}" c:Entrance.Kind="fade-up">
+      <c:SectionHead AlignBottom="True" Grow="True" RowGap="14" Margin="0,0,0,22">
+        <StackPanel MinWidth="200">
+          <TextBlock Classes="eyebrow" Text="COLLECTION" Margin="0,0,0,6" />
+          <TextBlock Classes="h1" Text="Playlists" />
+        </StackPanel>
+        <Button Classes="btn primary sm" Command="{Binding CreateCommand}"><c:IconText Kind="Plus" IconSize="13" Text="New playlist" /></Button>
+      </c:SectionHead>
+      <c:StateBlock IsVisible="{Binding NoPlaylists}" Icon="Book" Title="No playlists yet" Text="Create a playlist, then add tracks from any album with the ⋯ menu.">
+        <Button Classes="btn primary sm" Command="{Binding CreateCommand}"><c:IconText Kind="Plus" IconSize="13" Text="New playlist" /></Button>
+      </c:StateBlock>
+      <ItemsControl ItemsSource="{Binding GridItems}" IsVisible="{Binding HasPlaylists}" Margin="0,0,0,20">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><c:AutoFillPanel /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.DataTemplates>
+          <DataTemplate x:DataType="vm:PlaylistCardViewModel">
+            <Panel Classes="card" c:Entrance.Delay="{Binding EntranceDelay}" c:Entrance.Kind="fade-up">
+              <Border Classes="album-card">
+                <Button Classes="album-link" Command="{Binding OpenCommand}" ToolTip.Tip="{Binding Name}">
+                  <StackPanel>
+                    <c:Square><ContentControl Content="{Binding Mosaic}" /></c:Square>
+                    <StackPanel Margin="13,11,13,13" Spacing="3">
+                      <TextBlock Classes="card-title ellipsis" Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" />
+                      <TextBlock Classes="ellipsis mono" Text="{Binding Subtitle}" FontSize="10.5" Foreground="{DynamicResource Text3}" MinHeight="15" />
+                    </StackPanel>
+                  </StackPanel>
+                </Button>
+              </Border>
+              <c:Square VerticalAlignment="Top" IsVisible="{Binding HasTracks}">
+                <Panel>
+                  <Button Classes="album-play" Command="{Binding PlayCommand}" ToolTip.Tip="{Binding Name, StringFormat='Play {0}'}">
+                    <c:Icon Kind="Play" Size="12" />
+                  </Button>
+                </Panel>
+              </c:Square>
+            </Panel>
+          </DataTemplate>
+          <DataTemplate x:DataType="vm:NewPlaylistTile">
+            <Button Classes="new-playlist" AutomationProperties.Name="New playlist" Command="{Binding $parent[UserControl].((vm:PlaylistsViewModel)DataContext).CreateCommand}">
+              <c:DashedBorder CornerRadius="10" Padding="24">
+                <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource Bg2}" BorderBrush="{DynamicResource Border1}" BorderThickness="1"
+                          HorizontalAlignment="Center">
+                    <c:Icon Kind="Plus" Size="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <TextBlock Text="New playlist" HorizontalAlignment="Center" />
+                </StackPanel>
+              </c:DashedBorder>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.DataTemplates>
+      </ItemsControl>
+    </StackPanel>
+    <StackPanel IsVisible="{Binding IsDetail}" c:Entrance.Kind="fade-up">
+      <Panel Margin="0,0,0,16" MinHeight="32">
+        <Button Classes="text-link" HorizontalAlignment="Left" VerticalAlignment="Center" Command="{Binding AllCommand}">
+          <c:IconText Kind="Back" IconSize="12" Text="All playlists" />
+        </Button>
+      </Panel>
+      <Grid Classes="detail" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+        <c:Square Classes="detail-art">
+          <ContentControl Content="{Binding Mosaic}" />
+        </c:Square>
+        <DockPanel Grid.Column="1" Classes="detail-info" Margin="0,2,0,0" LastChildFill="False">
+          <StackPanel DockPanel.Dock="Top">
+            <TextBlock Classes="eyebrow" Text="PLAYLIST" Margin="0,0,0,8" />
+            <TextBlock Classes="detail-title" Text="{Binding Playlist.Name}" FontWeight="Bold" LetterSpacing="-0.6" TextWrapping="Wrap" Margin="0,0,0,6" />
+            <ItemsControl ItemsSource="{Binding Tags}" Margin="0,6,0,10">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Border Classes="tag"><TextBlock Text="{Binding}" /></Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding Created}" FontSize="12" Foreground="{DynamicResource Text3}" />
+          </StackPanel>
+          <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="8" LineSpacing="8" Margin="0,16,0,0">
+            <Button Classes="btn primary" IsEnabled="{Binding HasTracks}" Command="{Binding PlayCommand}"><c:IconText Kind="Play" IconSize="13" Text="Play" /></Button>
+            <Button Classes="btn secondary" IsEnabled="{Binding HasTracks}" Command="{Binding ShuffleCommand}"><c:IconText Kind="Shuffle" IconSize="13" Text="Shuffle" /></Button>
+            <Button Classes="btn secondary" IsEnabled="{Binding HasTracks}" Command="{Binding DownloadCommand}"><c:IconText Kind="Download" IconSize="13" Text="Download" /></Button>
+            <Button Classes="btn ghost" Command="{Binding RenameCommand}"><c:IconText Kind="Edit" IconSize="13" Text="Rename" /></Button>
+            <Button Classes="btn ghost danger" Command="{Binding DeleteCommand}"><c:IconText Kind="Trash" IconSize="13" Text="Delete" /></Button>
+          </WrapPanel>
+        </DockPanel>
+      </Grid>
+      <ContentControl Content="{Binding Tracks}" />
+    </StackPanel>
+    <c:StateBlock IsVisible="{Binding IsNotFound}" Icon="Book" Title="Playlist not found" Text="It may have been deleted." c:Entrance.Kind="fade-up">
+      <Button Classes="btn secondary sm" Command="{Binding AllCommand}"><c:IconText Kind="Back" IconSize="13" Text="All playlists" /></Button>
+    </c:StateBlock>
+  </Panel>
+</UserControl>
