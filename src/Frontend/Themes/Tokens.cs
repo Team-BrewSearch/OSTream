@@ -1,19 +1,21 @@
-using System;
-using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using Avalonia.Styling;
-using OSTream.Controls;
-namespace OSTream.Themes;
+using OSTream.Frontend.Controls;
+using System;
+using System.Collections.Generic;
+namespace OSTream.Frontend.Themes;
+
 public static class Tokens
 {
     public const string UiFontName = "avares://OSTream/Assets/Fonts#Inter";
     public const string MonoFontName = "avares://OSTream/Assets/Fonts#JetBrains Mono";
-    static readonly (string Key, string Dark, string Light)[] Colors =
+    private static readonly (string Key, string Dark, string Light)[] Colors =
     [
         ("Bg0", "#08080b", "#f5f5f8"),
         ("Bg1", "#0e0e13", "#ffffff"),
@@ -52,17 +54,31 @@ public static class Tokens
         ("Skeleton", Rgba(255, 255, 255, 0.045), Rgba(20, 20, 40, 0.06)),
         ("SkeletonShine", Rgba(255, 255, 255, 0.07), Rgba(20, 20, 40, 0.10)),
     ];
-    static string Rgba(int r, int g, int b, double a) => $"#{(int)System.Math.Round(a * 255):X2}{r:X2}{g:X2}{b:X2}";
-    static double Blur(double css) => css <= 0 ? 0 : System.Math.Max(0, (css / 2 - 0.5) / 0.57735);
-    static BoxShadow Shadow(double x, double y, double blur, double spread, Color color, bool inset = false) =>
-        new() { OffsetX = x, OffsetY = y, Blur = Blur(blur), Spread = spread, Color = color, IsInset = inset };
-    static BoxShadows Shadows(params BoxShadow[] shadows) =>
-        shadows.Length == 1 ? new BoxShadows(shadows[0]) : new BoxShadows(shadows[0], shadows[1..]);
+    private static string Rgba(int r, int g, int b, double a)
+    {
+        return $"#{(int)System.Math.Round(a * 255):X2}{r:X2}{g:X2}{b:X2}";
+    }
+
+    private static double Blur(double css)
+    {
+        return css <= 0 ? 0 : System.Math.Max(0, ((css / 2) - 0.5) / 0.57735);
+    }
+
+    private static BoxShadow Shadow(double x, double y, double blur, double spread, Color color, bool inset = false)
+    {
+        return new() { OffsetX = x, OffsetY = y, Blur = Blur(blur), Spread = spread, Color = color, IsInset = inset };
+    }
+
+    private static BoxShadows Shadows(params BoxShadow[] shadows)
+    {
+        return shadows.Length == 1 ? new BoxShadows(shadows[0]) : new BoxShadows(shadows[0], shadows[1..]);
+    }
+
     public static void Install(Application app)
     {
-        var dark = new ResourceDictionary();
-        var light = new ResourceDictionary();
-        foreach (var (key, d, l) in Colors)
+        ResourceDictionary dark = [];
+        ResourceDictionary light = [];
+        foreach ((string? key, string? d, string? l) in Colors)
         {
             dark[key] = new SolidColorBrush(Color.Parse(d));
             light[key] = new SolidColorBrush(Color.Parse(l));
@@ -73,34 +89,54 @@ public static class Tokens
         AddComposites(light, isDark: false);
         app.Resources.ThemeDictionaries[ThemeVariant.Dark] = dark;
         app.Resources.ThemeDictionaries[ThemeVariant.Light] = light;
-        foreach (var (key, value) in Static()) app.Resources[key] = value;
+        foreach ((string? key, object? value) in Static())
+        {
+            app.Resources[key] = value;
+        }
+
         app.Resources["ButtonTransitions"] = Fade(Motion.Normal, withTransform: true, withBorder: true);
         app.Resources["FastTransitions"] = Fade(Motion.Fast, withTransform: false, withBorder: false);
     }
-    static Transitions Fade(TimeSpan duration, bool withTransform, bool withBorder)
+    private static Transitions Fade(TimeSpan duration, bool withTransform, bool withBorder)
     {
-        var easing = Motion.Standard;
-        var transitions = new Transitions
-        {
+        Easing easing = Motion.Standard;
+        Transitions transitions =
+        [
             new BrushFadeTransition { Property = TemplatedControl.BackgroundProperty, Duration = duration, Easing = easing },
             new BrushFadeTransition { Property = TextElement.ForegroundProperty, Duration = duration, Easing = easing },
             new DoubleTransition { Property = Visual.OpacityProperty, Duration = duration, Easing = easing },
-        };
-        if (withBorder) transitions.Add(new BrushFadeTransition { Property = TemplatedControl.BorderBrushProperty, Duration = duration, Easing = easing });
-        if (withTransform) transitions.Add(new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = easing });
+        ];
+        if (withBorder)
+        {
+            transitions.Add(new BrushFadeTransition { Property = TemplatedControl.BorderBrushProperty, Duration = duration, Easing = easing });
+        }
+
+        if (withTransform)
+        {
+            transitions.Add(new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = easing });
+        }
+
         return transitions;
     }
-    static Color C(ResourceDictionary d, string key) => (Color)d[key + "Color"]!;
-    static void AddComposites(ResourceDictionary d, bool isDark)
+    private static Color C(ResourceDictionary d, string key)
     {
-        var glow = C(d, "AccentGlow");
-        var black = (double a) => Color.FromArgb((byte)(a * 255), 0, 0, 0);
-        var shade = isDark ? black : (double a) => Color.FromArgb((byte)(a * 255), 20, 20, 40);
+        return (Color)d[key + "Color"]!;
+    }
+
+    private static void AddComposites(ResourceDictionary d, bool isDark)
+    {
+        Color glow = C(d, "AccentGlow");
+        static Color black(double a)
+        {
+            return Color.FromArgb((byte)(a * 255), 0, 0, 0);
+        }
+
+        Func<double, Color> shade = isDark ? black : (double a) => Color.FromArgb((byte)(a * 255), 20, 20, 40);
         d["ShadowSm"] = Shadows(Shadow(0, 1, 2, 0, shade(isDark ? 0.4 : 0.08)));
         d["ShadowMd"] = Shadows(Shadow(0, 4, 16, 0, shade(isDark ? 0.45 : 0.1)));
         d["ShadowLg"] = Shadows(Shadow(0, 12, 40, 0, shade(isDark ? 0.55 : 0.16)));
         d["ShadowPop"] = Shadows(Shadow(0, 18, 50, 0, shade(isDark ? 0.6 : 0.18)), Shadow(0, 0, 0, 1, C(d, isDark ? "Border2" : "Border1")));
-        var insetHi = Shadow(0, 1, 0, 0, isDark ? Color.FromArgb(15, 255, 255, 255) : Color.FromArgb(230, 255, 255, 255), inset: true);
+        BoxShadow insetHi = Shadow(0, 1, 0, 0, isDark ? Color.FromArgb(15, 255, 255, 255) : Color.FromArgb(230, 255, 255, 255), inset: true);
         d["SegmentedActiveShadow"] = Shadows(Shadow(0, 1, 2, 0, shade(isDark ? 0.4 : 0.08)), insetHi);
         d["Glow6"] = Shadows(Shadow(0, 0, 6, 0, glow));
         d["Glow8"] = Shadows(Shadow(0, 0, 8, 0, glow));
@@ -133,13 +169,17 @@ public static class Tokens
             },
         };
     }
-    static LinearGradientBrush Horizontal(Color from, Color to, double toOffset = 1) => new()
+    private static LinearGradientBrush Horizontal(Color from, Color to, double toOffset = 1)
     {
-        StartPoint = new RelativePoint(0, 0.5, RelativeUnit.Relative),
-        EndPoint = new RelativePoint(1, 0.5, RelativeUnit.Relative),
-        GradientStops = { new GradientStop(from, 0), new GradientStop(to, toOffset) },
-    };
-    static IEnumerable<(string, object)> Static()
+        return new()
+        {
+            StartPoint = new RelativePoint(0, 0.5, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(1, 0.5, RelativeUnit.Relative),
+            GradientStops = { new GradientStop(from, 0), new GradientStop(to, toOffset) },
+        };
+    }
+
+    private static IEnumerable<(string, object)> Static()
     {
         string[][] art =
         [
@@ -150,8 +190,11 @@ public static class Tokens
             ["#052e16", "#16a34a", "#facc15"],
             ["#3b0764", "#a21caf", "#f472b6"],
         ];
-        for (var i = 0; i < art.Length; i++)
+        for (int i = 0; i < art.Length; i++)
+        {
             yield return ($"Art{i + 1}", Diagonal(Color.Parse(art[i][0]), Color.Parse(art[i][1]), Color.Parse(art[i][2])));
+        }
+
         yield return ("BrandGradient", new LinearGradientBrush
         {
             StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
@@ -161,14 +204,21 @@ public static class Tokens
         yield return ("MonoFont", new FontFamily(MonoFontName));
         yield return ("UiFont", new FontFamily(UiFontName));
     }
-    static LinearGradientBrush Diagonal(Color a, Color b, Color c) => new()
+    private static LinearGradientBrush Diagonal(Color a, Color b, Color c)
     {
-        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-        EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
-        GradientStops = { new GradientStop(a, 0), new GradientStop(b, 0.55), new GradientStop(c, 1) },
-    };
-    static class Colors_
+        return new()
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+            GradientStops = { new GradientStop(a, 0), new GradientStop(b, 0.55), new GradientStop(c, 1) },
+        };
+    }
+
+    private static class Colors_
     {
-        public static Color Transparent(Color c) => Color.FromArgb(0, c.R, c.G, c.B);
+        public static Color Transparent(Color c)
+        {
+            return Color.FromArgb(0, c.R, c.G, c.B);
+        }
     }
 }

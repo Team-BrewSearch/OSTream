@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 namespace OSTream.Core.Models;
+
 public sealed record AlbumSummary
 {
     public string Slug { get; init; } = "";
@@ -63,13 +64,16 @@ public sealed record Album
     public string TotalLength { get; init; } = "";
     public IReadOnlyList<AlbumSummary> Related { get; init; } = [];
     public string Thumb => Cover;
-    public AlbumSummary ToSummary() => new()
+    public AlbumSummary ToSummary()
     {
-        Slug = Slug,
-        Title = Title,
-        Thumb = Cover,
-        Year = Year,
-        Platforms = Platforms,
-        Type = Type,
-    };
+        return new()
+        {
+            Slug = Slug,
+            Title = Title,
+            Thumb = Cover,
+            Year = Year,
+            Platforms = Platforms,
+            Type = Type,
+        };
+    }
 }

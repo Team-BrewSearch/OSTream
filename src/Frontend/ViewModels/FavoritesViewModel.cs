@@ -1,15 +1,18 @@
-using System.Collections.Generic;
-using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OSTream.Core.Models;
-using OSTream.Navigation;
-using OSTream.Services;
+using OSTream.Frontend;
+using OSTream.Frontend.Navigation;
+using OSTream.Frontend.Services;
+using OSTream.Frontend.ViewModels;
+using System.Collections.Generic;
+using System.Linq;
 namespace OSTream.ViewModels;
+
 public sealed partial class FavoritesViewModel : PageViewModel
 {
-    string _signature = "";
-    string? _selected;
+    private string _signature = "";
+    private string? _selected;
     public FavoritesViewModel(AppServices app) : base(app)
     {
         Panel = new AlbumPanelViewModel(app, inline: true, UserActions.AlbumRoute, RequestScroll);
@@ -27,20 +30,30 @@ public sealed partial class FavoritesViewModel : PageViewModel
     public bool NoTracks => IsTracksTab && TrackCount == 0;
     public bool ShowGrid => IsAlbumsTab && AlbumCount > 0;
     public bool ShowTracks => IsTracksTab && TrackCount > 0;
-    void Notify()
+    private void Notify()
     {
-        foreach (var name in new[] { nameof(IsAlbumsTab), nameof(ShowActions), nameof(NoAlbums), nameof(NoTracks), nameof(ShowGrid), nameof(ShowTracks) })
+        foreach (string? name in new[] { nameof(IsAlbumsTab), nameof(ShowActions), nameof(NoAlbums), nameof(NoTracks), nameof(ShowGrid), nameof(ShowTracks) })
+        {
             OnPropertyChanged(name);
+        }
     }
-    void OnLibrary(LibraryData old, LibraryData now) => Render();
-    void Render()
+    private void OnLibrary(LibraryData old, LibraryData now)
     {
-        var lib = App.Library.Value;
+        Render();
+    }
+
+    private void Render()
+    {
+        LibraryData lib = App.Library.Value;
         AlbumCount = lib.FavAlbums.Count;
         TrackCount = lib.FavTracks.Count;
-        var signature = $"{IsTracksTab}|{string.Join(",", lib.FavAlbums.Select(a => a.Slug))}|{string.Join(",", lib.FavTracks.Select(t => t.Id))}";
+        string signature = $"{IsTracksTab}|{string.Join(",", lib.FavAlbums.Select(a => a.Slug))}|{string.Join(",", lib.FavTracks.Select(t => t.Id))}";
         Notify();
-        if (signature == _signature) return;
+        if (signature == _signature)
+        {
+            return;
+        }
+
         _signature = signature;
         if (IsTracksTab)
         {
@@ -64,13 +77,37 @@ public sealed partial class FavoritesViewModel : PageViewModel
         IsTracksTab = route.Param("tab") == "tracks";
         _selected = IsTracksTab ? null : route.Param("album");
         Render();
-        foreach (var card in Cards) card.IsSelected = card.Slug == _selected;
+        foreach (AlbumCardViewModel card in Cards)
+        {
+            card.IsSelected = card.Slug == _selected;
+        }
+
         Panel.Show(_selected);
     }
-    [RelayCommand] void ShowTab(string tab) => App.Navigator.Navigate("/favorites", "tab", tab);
-    [RelayCommand] void PlayAll() => App.Player.PlayList(App.Library.Value.FavTracks);
-    [RelayCommand] void Shuffle() => App.Player.PlayList(App.Library.Value.FavTracks, 0, true);
-    [RelayCommand] void Browse() => App.Navigator.Navigate("/");
+    [RelayCommand]
+    private void ShowTab(string tab)
+    {
+        App.Navigator.Navigate("/favorites", "tab", tab);
+    }
+
+    [RelayCommand]
+    private void PlayAll()
+    {
+        App.Player.PlayList(App.Library.Value.FavTracks);
+    }
+
+    [RelayCommand]
+    private void Shuffle()
+    {
+        App.Player.PlayList(App.Library.Value.FavTracks, 0, true);
+    }
+
+    [RelayCommand]
+    private void Browse()
+    {
+        App.Navigator.Navigate("/");
+    }
+
     public override void Dispose()
     {
         App.Library.Changed -= OnLibrary;

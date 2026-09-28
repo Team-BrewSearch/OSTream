@@ -1,8 +1,10 @@
-using System;
 using CommunityToolkit.Mvvm.ComponentModel;
-using OSTream.Navigation;
+using OSTream.Frontend.Navigation;
 using OSTream.Services;
-namespace OSTream.ViewModels;
+using OSTream.ViewModels;
+using System;
+namespace OSTream.Frontend.ViewModels;
+
 public sealed partial class MainViewModel : ViewModelBase
 {
     public MainViewModel(AppServices app)
@@ -23,14 +25,14 @@ public sealed partial class MainViewModel : ViewModelBase
     public DialogService Dialogs => App.Dialogs;
     public MenuService Menus => App.Menus;
     public LightboxService Lightbox => App.Lightbox;
-    string? _kind;
+    private string? _kind;
     [ObservableProperty] public partial PageViewModel? Page { get; private set; }
     public event Action<ScrollTarget, bool>? ScrollRequested;
     public bool SearchFocused { get; set; }
-    void OnRoute(Route route)
+    private void OnRoute(Route route)
     {
         App.Menus.Close();
-        var kind = route.Name is "album" or "downloads" or "favorites" or "recent" or "playlists" ? route.Name : "discover";
+        string kind = route.Name is "album" or "downloads" or "favorites" or "recent" or "playlists" ? route.Name : "discover";
         if (kind != _kind || Page is null)
         {
             if (Page is { } old)
@@ -54,8 +56,18 @@ public sealed partial class MainViewModel : ViewModelBase
         Page.Update(route);
         Sidebar.Active = kind == "album" ? null : kind;
         TopBar.Sync(route, SearchFocused);
-        if (Rail.IsNarrow && Rail.IsDrawerOpen) Rail.Toggle(false);
+        if (Rail.IsNarrow && Rail.IsDrawerOpen)
+        {
+            Rail.Toggle(false);
+        }
     }
-    void OnScrollRequested(ScrollTarget target, bool instant) => ScrollRequested?.Invoke(target, instant);
-    public void Start() => App.Navigator.Start();
+    private void OnScrollRequested(ScrollTarget target, bool instant)
+    {
+        ScrollRequested?.Invoke(target, instant);
+    }
+
+    public void Start()
+    {
+        App.Navigator.Start();
+    }
 }

@@ -1,23 +1,25 @@
-using System;
-using System.IO;
-using System.Net.Http;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OSTream.Core.Downloads;
 using OSTream.Core.Khinsider;
 using OSTream.Core.Logging;
 using OSTream.Core.Player;
 using OSTream.Core.Storage;
-using OSTream.Navigation;
-using OSTream.Platform;
+using OSTream.Frontend.Navigation;
+using OSTream.Frontend.Platform;
+using OSTream.Frontend.Services;
 using OSTream.Services;
-namespace OSTream;
+using System;
+using System.IO;
+using System.Net.Http;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+namespace OSTream.Frontend;
+
 public sealed class AppServices : IDisposable
 {
-    readonly FileLoggerProvider _logs;
-    readonly HttpClient _imageHttp;
+    private readonly FileLoggerProvider _logs;
+    private readonly HttpClient _imageHttp;
     public static string LogDir => Path.Combine(AppPaths.ConfigDir, "logs");
     public AppServices()
     {
@@ -62,14 +64,18 @@ public sealed class AppServices : IDisposable
     public UserActions Actions { get; }
     public ILogger Log { get; }
     public IMediaSession MediaSession { get; }
-    void Watch<T>(JsonStore<T> store, string name, string saveError) where T : class
+    private void Watch<T>(JsonStore<T> store, string name, string saveError) where T : class
     {
         store.FlushFailed += ex =>
         {
             Log.LogError(ex, "Saving {Name} failed", name);
             Toasts.Toast(saveError, Core.ToastKind.Error, ex.Message);
         };
-        if (store.LoadError is not { } error) return;
+        if (store.LoadError is not { } error)
+        {
+            return;
+        }
+
         Log.LogError(error, "Loading {Name} failed", name);
         Toasts.Toast($"Your {name} could not be read", Core.ToastKind.Error,
             store.IsReadOnly ? "Changes will not be saved this session." : $"A copy was kept at {store.BackupPath}.");
@@ -85,10 +91,14 @@ public sealed class AppServices : IDisposable
             Toasts.Toast("Could not open the folder", Core.ToastKind.Error, ex.Message);
         }
     }
-    bool _disposed;
+    private bool _disposed;
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref _disposed, true)) return;
+        if (Interlocked.Exchange(ref _disposed, true))
+        {
+            return;
+        }
+
         MediaSession.Dispose();
         Player.Dispose();
         Downloads.Dispose();

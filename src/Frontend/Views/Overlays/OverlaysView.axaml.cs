@@ -1,22 +1,25 @@
-using System;
-using System.ComponentModel;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
 using Avalonia.VisualTree;
-using OSTream.Controls;
 using OSTream.Core;
+using OSTream.Frontend.Controls;
+using OSTream.Frontend.ViewModels;
+using OSTream.Frontend.Views.Overlays;
 using OSTream.Services;
-using OSTream.ViewModels;
+using System;
+using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 namespace OSTream.Views.Overlays;
+
 public partial class OverlaysView : UserControl
 {
-    MainViewModel? _vm;
-    IInputElement? _focusBeforeDialog;
-    int _lightboxLoad;
+    private MainViewModel? _vm;
+    private IInputElement? _focusBeforeDialog;
+    private int _lightboxLoad;
     public OverlaysView()
     {
         InitializeComponent();
@@ -24,76 +27,129 @@ public partial class OverlaysView : UserControl
         Menu.SizeChanged += (_, _) => PositionMenu();
         DialogLayer.PointerPressed += (_, e) =>
         {
-            if (e.Source == DialogLayer) _vm?.Dialogs.Current?.Cancel();
+            if (e.Source == DialogLayer)
+            {
+                _vm?.Dialogs.Current?.Cancel();
+            }
         };
         DialogInput.AddHandler(KeyDownEvent, (_, e) =>
         {
-            if (e.Key != Key.Enter) return;
+            if (e.Key != Key.Enter)
+            {
+                return;
+            }
+
             (_vm?.Dialogs.Current)?.ConfirmCommand.Execute(null);
             e.Handled = true;
         }, RoutingStrategies.Tunnel);
         LightboxStage.PointerPressed += (_, e) =>
         {
-            if (e.Source == LightboxStage) _vm?.Lightbox.Current?.Close();
+            if (e.Source == LightboxStage)
+            {
+                _vm?.Lightbox.Current?.Close();
+            }
         };
         ToastHover.Attach(Toasts);
     }
-    void Attach(MainViewModel? vm)
+    private void Attach(MainViewModel? vm)
     {
         _vm = vm;
-        if (vm is null) return;
+        if (vm is null)
+        {
+            return;
+        }
+
         vm.Menus.PropertyChanged += OnMenuChanged;
         vm.Menus.AnchorChanged += (anchor, open) => (anchor as StyledElement)?.Classes.Set("expanded", open);
         vm.Dialogs.PropertyChanged += OnDialogChanged;
         vm.Lightbox.PropertyChanged += OnLightboxChanged;
     }
-    void OnMenuChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnMenuChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(MenuService.Entries) || _vm is null) return;
-        if (!_vm.Menus.IsOpen) return;
+        if (e.PropertyName != nameof(MenuService.Entries) || _vm is null)
+        {
+            return;
+        }
+
+        if (!_vm.Menus.IsOpen)
+        {
+            return;
+        }
+
         MenuScroll.MaxHeight = Math.Max(120, (TopLevel.GetTopLevel(this)?.ClientSize.Height ?? 800) * 0.6);
         PositionMenu();
         Entrance.Play(Menu, "pop-in");
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (MenuButtons().FirstOrDefault() is { } first) QuietFocus.Move(first);
+            if (MenuButtons().FirstOrDefault() is { } first)
+            {
+                QuietFocus.Move(first);
+            }
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
-    Button[] MenuButtons() => MenuItems.GetVisualDescendants().OfType<Button>().Where(b => b.IsVisible && b.Classes.Contains("menu-item")).ToArray();
-    void PositionMenu()
+    private Button[] MenuButtons()
     {
-        if (_vm?.Menus.Anchor is not Visual anchor || !_vm.Menus.IsOpen) return;
-        var origin = anchor.TranslatePoint(new Point(0, 0), MenuLayer);
-        if (origin is not { } a) return;
-        var size = Menu.DesiredSize;
-        if (size.Width <= 0) Menu.Measure(Size.Infinity);
+        return MenuItems.GetVisualDescendants().OfType<Button>().Where(b => b.IsVisible && b.Classes.Contains("menu-item")).ToArray();
+    }
+
+    private void PositionMenu()
+    {
+        if (_vm?.Menus.Anchor is not Visual anchor || !_vm.Menus.IsOpen)
+        {
+            return;
+        }
+
+        Point? origin = anchor.TranslatePoint(new Point(0, 0), MenuLayer);
+        if (origin is not { } a)
+        {
+            return;
+        }
+
+        Size size = Menu.DesiredSize;
+        if (size.Width <= 0)
+        {
+            Menu.Measure(Size.Infinity);
+        }
+
         size = Menu.DesiredSize;
-        var bounds = MenuLayer.Bounds;
+        Rect bounds = MenuLayer.Bounds;
         const double gap = 6;
-        var anchorRight = a.X + anchor.Bounds.Width;
-        var anchorBottom = a.Y + anchor.Bounds.Height;
-        var top = anchorBottom + gap;
-        if (top + size.Height > bounds.Height - 8) top = Math.Max(8, a.Y - size.Height - gap);
-        var left = anchorRight - size.Width;
-        if (left < 8) left = Math.Min(a.X, bounds.Width - size.Width - 8);
+        double anchorRight = a.X + anchor.Bounds.Width;
+        double anchorBottom = a.Y + anchor.Bounds.Height;
+        double top = anchorBottom + gap;
+        if (top + size.Height > bounds.Height - 8)
+        {
+            top = Math.Max(8, a.Y - size.Height - gap);
+        }
+
+        double left = anchorRight - size.Width;
+        if (left < 8)
+        {
+            left = Math.Min(a.X, bounds.Width - size.Width - 8);
+        }
+
         Canvas.SetLeft(Menu, Math.Round(Math.Max(8, left)));
         Canvas.SetTop(Menu, Math.Round(top));
     }
     public bool HandleMenuKey(KeyEventArgs e)
     {
-        if (_vm is not { Menus.IsOpen: true } vm) return false;
-        var buttons = MenuButtons();
-        var index = Array.FindIndex(buttons, b => b.IsFocused);
+        if (_vm is not { Menus.IsOpen: true } vm)
+        {
+            return false;
+        }
+
+        Button[] buttons = MenuButtons();
+        int index = Array.FindIndex(buttons, b => b.IsFocused);
         switch (e.Key)
         {
             case Key.Escape:
-                var anchor = vm.Menus.Anchor as InputElement;
+                InputElement? anchor = vm.Menus.Anchor as InputElement;
                 vm.Menus.Close();
-                anchor?.Focus(NavigationMethod.Tab);
+                _ = (anchor?.Focus(NavigationMethod.Tab));
                 return true;
             case Key.Down or Key.Up when buttons.Length > 0:
-                var next = e.Key == Key.Down ? index + 1 : index - 1;
-                buttons[(next + buttons.Length) % buttons.Length].Focus(NavigationMethod.Tab);
+                int next = e.Key == Key.Down ? index + 1 : index - 1;
+                _ = buttons[(next + buttons.Length) % buttons.Length].Focus(NavigationMethod.Tab);
                 return true;
             case Key.Tab:
                 vm.Menus.Close();
@@ -101,10 +157,18 @@ public partial class OverlaysView : UserControl
         }
         return false;
     }
-    public bool IsInMenu(Visual? visual) => visual is not null && (visual == Menu || Menu.IsVisualAncestorOf(visual));
-    void OnDialogChanged(object? sender, PropertyChangedEventArgs e)
+    public bool IsInMenu(Visual? visual)
     {
-        if (e.PropertyName != nameof(DialogService.Current) || _vm is null) return;
+        return visual is not null && (visual == Menu || Menu.IsVisualAncestorOf(visual));
+    }
+
+    private void OnDialogChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(DialogService.Current) || _vm is null)
+        {
+            return;
+        }
+
         if (_vm.Dialogs.Current is { } dialog)
         {
             _focusBeforeDialog = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
@@ -112,7 +176,7 @@ public partial class OverlaysView : UserControl
             {
                 if (dialog.IsPrompt)
                 {
-                    DialogInput.Focus(NavigationMethod.Tab);
+                    _ = DialogInput.Focus(NavigationMethod.Tab);
                     DialogInput.SelectAll();
                 }
                 else
@@ -124,13 +188,17 @@ public partial class OverlaysView : UserControl
         }
         else
         {
-            _focusBeforeDialog?.Focus();
+            _ = (_focusBeforeDialog?.Focus());
             _focusBeforeDialog = null;
         }
     }
     public bool HandleDialogKey(KeyEventArgs e)
     {
-        if (_vm?.Dialogs.Current is not { } dialog) return false;
+        if (_vm?.Dialogs.Current is not { } dialog)
+        {
+            return false;
+        }
+
         if (e.Key == Key.Escape)
         {
             dialog.Cancel();
@@ -138,30 +206,45 @@ public partial class OverlaysView : UserControl
         }
         return false;
     }
-    void OnLightboxChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnLightboxChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(LightboxService.Current) || _vm?.Lightbox.Current is not { } box) return;
+        if (e.PropertyName != nameof(LightboxService.Current) || _vm?.Lightbox.Current is not { } box)
+        {
+            return;
+        }
+
         box.PropertyChanged += (_, args) =>
         {
-            if (args.PropertyName == nameof(LightboxViewModel.Source)) LoadLightbox(box).Forget(_vm.App.Log);
+            if (args.PropertyName == nameof(LightboxViewModel.Source))
+            {
+                LoadLightbox(box).Forget(_vm.App.Log);
+            }
         };
         LoadLightbox(box).Forget(_vm.App.Log);
         Avalonia.Threading.Dispatcher.UIThread.Post(() => QuietFocus.Move(LightboxClose), Avalonia.Threading.DispatcherPriority.Loaded);
     }
-    async Task LoadLightbox(LightboxViewModel box)
+    private async Task LoadLightbox(LightboxViewModel box)
     {
-        var request = ++_lightboxLoad;
+        int request = ++_lightboxLoad;
         LightboxSpinner.IsVisible = true;
         LightboxImage.Source = null;
-        var width = (int)((TopLevel.GetTopLevel(this)?.ClientSize.Width ?? 1600) * (TopLevel.GetTopLevel(this)?.RenderScaling ?? 1));
-        var bitmap = ArtView.Loader is { } loader ? await loader.LoadAsync(box.Source, Math.Min(width, 2048)) : null;
-        if (request != _lightboxLoad) return;
+        int width = (int)((TopLevel.GetTopLevel(this)?.ClientSize.Width ?? 1600) * (TopLevel.GetTopLevel(this)?.RenderScaling ?? 1));
+        Bitmap? bitmap = ArtView.Loader is { } loader ? await loader.LoadAsync(box.Source, Math.Min(width, 2048)) : null;
+        if (request != _lightboxLoad)
+        {
+            return;
+        }
+
         LightboxSpinner.IsVisible = false;
         LightboxImage.Source = bitmap;
     }
     public bool HandleLightboxKey(KeyEventArgs e)
     {
-        if (_vm?.Lightbox.Current is not { } box) return false;
+        if (_vm?.Lightbox.Current is not { } box)
+        {
+            return false;
+        }
+
         switch (e.Key)
         {
             case Key.Escape: box.Close(); return true;

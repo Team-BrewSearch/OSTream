@@ -3,8 +3,8 @@
              xmlns:vm="using:OSTream.ViewModels"
              xmlns:pages="using:OSTream.Views.Pages"
              xmlns:comp="using:OSTream.Views.Components"
-             xmlns:c="using:OSTream.Controls"
-             x:Class="OSTream.App"
+              xmlns:c="using:OSTream.Frontend.Controls"
+              x:Class="OSTream.Frontend.App"
              Name="OSTream"
              RequestedThemeVariant="Default">
   <Application.Styles>

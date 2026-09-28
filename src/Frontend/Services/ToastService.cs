@@ -1,16 +1,17 @@
-using System;
-using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using OSTream.Controls;
 using OSTream.Core;
+using OSTream.Frontend.Controls;
+using System;
+using System.Collections.ObjectModel;
 namespace OSTream.Services;
+
 public sealed partial class ToastItem : ObservableObject
 {
-    readonly ToastService _owner;
-    readonly TimeSpan _duration;
-    readonly DispatcherTimer _timer;
+    private readonly ToastService _owner;
+    private readonly TimeSpan _duration;
+    private readonly DispatcherTimer _timer;
     internal ToastItem(ToastService owner, string message, ToastKind kind, string detail, ToastAction? action)
     {
         _owner = owner;
@@ -41,12 +42,16 @@ public sealed partial class ToastItem : ObservableObject
     public void Resume()
     {
         IsPaused = false;
-        if (IsLeaving) return;
+        if (IsLeaving)
+        {
+            return;
+        }
+
         _timer.Interval = _duration;
         _timer.Start();
     }
     [RelayCommand]
-    void Run()
+    private void Run()
     {
         Action?.Run();
         Dismiss();
@@ -54,12 +59,19 @@ public sealed partial class ToastItem : ObservableObject
     [RelayCommand]
     public void Dismiss()
     {
-        if (IsLeaving) return;
+        if (IsLeaving)
+        {
+            return;
+        }
+
         _timer.Stop();
         IsLeaving = true;
-        DispatcherTimer.RunOnce(() => _owner.Items.Remove(this), TimeSpan.FromMilliseconds(200));
+        _ = DispatcherTimer.RunOnce(() => _owner.Items.Remove(this), TimeSpan.FromMilliseconds(200));
     }
-    internal void Drop() => _timer.Stop();
+    internal void Drop()
+    {
+        _timer.Stop();
+    }
 }
 public sealed class ToastService : INotifier
 {
@@ -78,6 +90,8 @@ public sealed class ToastService : INotifier
             Items.RemoveAt(0);
         }
     }
-    public void Error(Exception error, string prefix = "") =>
+    public void Error(Exception error, string prefix = "")
+    {
         Toast(prefix.Length > 0 ? prefix : error.Message, ToastKind.Error, prefix.Length > 0 ? error.Message : "");
+    }
 }

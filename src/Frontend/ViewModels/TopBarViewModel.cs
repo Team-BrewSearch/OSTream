@@ -1,24 +1,30 @@
-using System;
-using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OSTream.Core;
 using OSTream.Core.Models;
-using OSTream.Navigation;
+using OSTream.Frontend;
+using OSTream.Frontend.Navigation;
+using OSTream.Frontend.ViewModels;
+using System;
+using System.Threading.Tasks;
 namespace OSTream.ViewModels;
+
 public sealed partial class TopBarViewModel : ViewModelBase
 {
-    readonly AppServices _app;
-    readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(Config.SearchDebounceMs) };
-    bool _syncing;
+    private readonly AppServices _app;
+    private readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(Config.SearchDebounceMs) };
+    private bool _syncing;
     public TopBarViewModel(AppServices app)
     {
         _app = app;
         _debounce.Tick += (_, _) =>
         {
             _debounce.Stop();
-            if (SearchText.Trim().Length >= 2) Go(SearchText, _app.Navigator.Current.Name == "search");
+            if (SearchText.Trim().Length >= 2)
+            {
+                Go(SearchText, _app.Navigator.Current.Name == "search");
+            }
         };
         app.Settings.Changed += (_, _) => RefreshSettings();
         RefreshSettings();
@@ -42,7 +48,11 @@ public sealed partial class TopBarViewModel : ViewModelBase
     public event Action? FocusSearchRequested;
     partial void OnSearchTextChanged(string value)
     {
-        if (_syncing) return;
+        if (_syncing)
+        {
+            return;
+        }
+
         _debounce.Stop();
         _debounce.Start();
     }
@@ -59,7 +69,7 @@ public sealed partial class TopBarViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsLightTheme));
         OnPropertyChanged(nameof(IsDarkTheme));
     }
-    void RefreshSettings()
+    private void RefreshSettings()
     {
         Format = _app.Settings.Value.Format;
         Theme = _app.Settings.Value.Theme;
@@ -67,19 +77,29 @@ public sealed partial class TopBarViewModel : ViewModelBase
     }
     public void Sync(Route route, bool focused)
     {
-        if (focused) return;
+        if (focused)
+        {
+            return;
+        }
+
         _syncing = true;
         SearchText = route.Name == "search" ? route.Param("q") ?? "" : "";
         _syncing = false;
     }
-    void Go(string value, bool replace)
+    private void Go(string value, bool replace)
     {
-        var q = value.Trim();
-        if (q.Length > 0) _app.Navigator.Navigate("/search", "q", q, replace);
-        else if (_app.Navigator.Current.Name == "search") _app.Navigator.Navigate("/", replace: replace);
+        string q = value.Trim();
+        if (q.Length > 0)
+        {
+            _app.Navigator.Navigate("/search", "q", q, replace);
+        }
+        else if (_app.Navigator.Current.Name == "search")
+        {
+            _app.Navigator.Navigate("/", replace: replace);
+        }
     }
     [RelayCommand]
-    void Submit()
+    private void Submit()
     {
         _debounce.Stop();
         Go(SearchText, _app.Navigator.Current.Name == "search");
@@ -92,25 +112,60 @@ public sealed partial class TopBarViewModel : ViewModelBase
         SearchText = "";
         _syncing = false;
         FocusSearchRequested?.Invoke();
-        if (_app.Navigator.Current.Name == "search") _app.Navigator.Navigate("/");
+        if (_app.Navigator.Current.Name == "search")
+        {
+            _app.Navigator.Navigate("/");
+        }
     }
-    public void FocusSearch() => FocusSearchRequested?.Invoke();
-    [RelayCommand] void SetFormat(AudioFormat format) => _app.Settings.Update(s => s with { Format = format });
-    [RelayCommand] void ToggleSettings() => IsSettingsOpen = !IsSettingsOpen;
-    [RelayCommand] void SetTheme(ThemeChoice theme) => _app.Settings.Update(s => s with { Theme = theme });
+    public void FocusSearch()
+    {
+        FocusSearchRequested?.Invoke();
+    }
+
+    [RelayCommand]
+    private void SetFormat(AudioFormat format)
+    {
+        _app.Settings.Update(s => s with { Format = format });
+    }
+
+    [RelayCommand]
+    private void ToggleSettings()
+    {
+        IsSettingsOpen = !IsSettingsOpen;
+    }
+
+    [RelayCommand]
+    private void SetTheme(ThemeChoice theme)
+    {
+        _app.Settings.Update(s => s with { Theme = theme });
+    }
+
     public void CycleTheme(int delta)
     {
-        var next = (ThemeChoice)(((int)Theme + delta + 3) % 3);
+        ThemeChoice next = (ThemeChoice)(((int)Theme + delta + 3) % 3);
         _app.Settings.Update(s => s with { Theme = next });
     }
     [RelayCommand]
-    async Task ChangeDownloadDir()
+    private async Task ChangeDownloadDir()
     {
-        var picked = await _app.Shell.PickFolderAsync("Choose the download folder", _app.Settings.DownloadDir);
-        if (picked is null) return;
+        string? picked = await _app.Shell.PickFolderAsync("Choose the download folder", _app.Settings.DownloadDir);
+        if (picked is null)
+        {
+            return;
+        }
+
         _app.Settings.Update(s => s with { DownloadDir = picked });
         _app.Toasts.Toast("Download folder changed", ToastKind.Success, picked);
     }
-    [RelayCommand] void OpenDownloadDir() => _ = _app.OpenJobFolder(null);
-    [RelayCommand] void Home() => _app.Navigator.Navigate("/");
+    [RelayCommand]
+    private void OpenDownloadDir()
+    {
+        _ = _app.OpenJobFolder(null);
+    }
+
+    [RelayCommand]
+    private void Home()
+    {
+        _app.Navigator.Navigate("/");
+    }
 }

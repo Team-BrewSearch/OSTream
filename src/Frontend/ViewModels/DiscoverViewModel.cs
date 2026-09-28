@@ -1,16 +1,19 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using OSTream.Core;
+using OSTream.Core.Khinsider;
+using OSTream.Core.Models;
+using OSTream.Frontend;
+using OSTream.Frontend.Controls;
+using OSTream.Frontend.Navigation;
+using OSTream.Frontend.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using OSTream.Controls;
-using OSTream.Core;
-using OSTream.Core.Khinsider;
-using OSTream.Core.Models;
-using OSTream.Navigation;
 namespace OSTream.ViewModels;
+
 public sealed partial class ListTabViewModel(string id, string label, bool selected) : ViewModelBase
 {
     public string Id { get; } = id;
@@ -19,14 +22,14 @@ public sealed partial class ListTabViewModel(string id, string label, bool selec
 }
 public sealed partial class DiscoverViewModel : PageViewModel
 {
-    readonly Action<bool> _setBusy;
-    CancellationTokenSource? _load;
-    string? _key;
-    IReadOnlyList<AlbumSummary> _albums = [];
-    int _limit = Config.GridPage;
-    string? _selected;
-    bool _scrollAfterLoad;
-    Route? _lastRoute;
+    private readonly Action<bool> _setBusy;
+    private CancellationTokenSource? _load;
+    private string? _key;
+    private IReadOnlyList<AlbumSummary> _albums = [];
+    private int _limit = Config.GridPage;
+    private string? _selected;
+    private bool _scrollAfterLoad;
+    private Route? _lastRoute;
     public DiscoverViewModel(AppServices app, Action<bool> setBusy) : base(app)
     {
         _setBusy = setBusy;
@@ -54,9 +57,13 @@ public sealed partial class DiscoverViewModel : PageViewModel
     [ObservableProperty] public partial string MoreLeft { get; private set; } = "";
     [ObservableProperty] public partial bool HasMore { get; private set; }
     public IEnumerable<int> Skeletons => Enumerable.Range(0, SkeletonCount);
-    partial void OnSkeletonCountChanged(int value) => OnPropertyChanged(nameof(Skeletons));
-    string ListId => _key is { } k && k.StartsWith("l:", StringComparison.Ordinal) ? k[2..] : Config.Lists[0].Id;
-    void RenderHead(string status)
+    partial void OnSkeletonCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(Skeletons));
+    }
+
+    private string ListId => _key is { } k && k.StartsWith("l:", StringComparison.Ordinal) ? k[2..] : Config.Lists[0].Id;
+    private void RenderHead(string status)
     {
         if (IsSearch)
         {
@@ -64,12 +71,12 @@ public sealed partial class DiscoverViewModel : PageViewModel
             HeadTitle = $"“{Query}”";
             return;
         }
-        var list = Config.ListFor(ListId);
+        AlbumListInfo list = Config.ListFor(ListId);
         HeadPrefix = "";
         HeadTitle = list.Title;
         Tabs = Config.Lists.Select(l => new ListTabViewModel(l.Id, l.Label, l.Id == list.Id)).ToArray();
     }
-    void RenderResults()
+    private void RenderResults()
     {
         IsLoading = false;
         IsError = false;
@@ -84,17 +91,17 @@ public sealed partial class DiscoverViewModel : PageViewModel
             return;
         }
         IsEmpty = false;
-        var ranked = !IsSearch && Config.ListFor(ListId).Ranked;
+        bool ranked = !IsSearch && Config.ListFor(ListId).Ranked;
         Cards = AlbumCardViewModel.Build(App, _albums.Take(_limit), slug => App.Navigator.With("album", slug), _selected, ranked);
-        var left = _albums.Count - Math.Min(_limit, _albums.Count);
+        int left = _albums.Count - Math.Min(_limit, _albums.Count);
         HasMore = left > 0;
         MoreLabel = $"Show {Math.Min(left, Config.GridPage)} more";
         MoreLeft = $"· {Formatting.Plural(left, "album")} left";
     }
-    async Task LoadGrid(string key, string query, string listId)
+    private async Task LoadGrid(string key, string query, string listId)
     {
         _load?.Cancel();
-        var cts = _load = new CancellationTokenSource();
+        CancellationTokenSource cts = _load = new CancellationTokenSource();
         _key = key;
         _albums = [];
         _limit = Config.GridPage;
@@ -109,22 +116,33 @@ public sealed partial class DiscoverViewModel : PageViewModel
         try
         {
             _albums = IsSearch ? await App.Catalog.SearchAsync(query, cts.Token) : await App.Catalog.GetListAsync(Config.ListFor(listId).Id, cts.Token);
-            if (cts.IsCancellationRequested) return;
-            RevealSelected();
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _ = RevealSelected();
             RenderHead("ready");
             RenderResults();
-            if (_scrollAfterLoad && _selected is not null) RequestScroll(ScrollTarget.AlbumPanel);
+            if (_scrollAfterLoad && _selected is not null)
+            {
+                RequestScroll(ScrollTarget.AlbumPanel);
+            }
         }
         catch (OperationCanceledException)
         {
         }
         catch (KhinsiderException ex)
         {
-            if (cts.IsCancellationRequested) return;
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
             RenderHead("error");
             IsLoading = false;
             IsError = true;
-            var offline = ex.Offline;
+            bool offline = ex.Offline;
             ErrorIcon = offline ? IconKind.WifiOff : IconKind.Alert;
             ErrorTitle = offline ? "Can’t reach KHInsider" : IsSearch ? "Search failed" : "Could not load albums";
             ErrorText = offline ? "Check your internet connection, then try again." : ex.Message;
@@ -138,25 +156,29 @@ public sealed partial class DiscoverViewModel : PageViewModel
             }
         }
     }
-    bool RevealSelected()
+    private bool RevealSelected()
     {
-        var at = _albums.Select((a, i) => (a, i)).FirstOrDefault(x => x.a.Slug == _selected, (null!, -1)).Item2;
-        if (at < _limit) return false;
+        int at = _albums.Select((a, i) => (a, i)).FirstOrDefault(x => x.a.Slug == _selected, (null!, -1)).Item2;
+        if (at < _limit)
+        {
+            return false;
+        }
+
         _limit = (at + 1 + Config.GridPage - 1) / Config.GridPage * Config.GridPage;
         return true;
     }
     public override void Update(Route route)
     {
         _lastRoute = route;
-        var query = route.Name == "search" ? (route.Param("q") ?? "").Trim() : "";
-        var listId = route.Param("list") ?? Config.Lists[0].Id;
+        string query = route.Name == "search" ? (route.Param("q") ?? "").Trim() : "";
+        string listId = route.Param("list") ?? Config.Lists[0].Id;
         _selected = route.Param("album");
         if (route.Name == "search" && query.Length == 0)
         {
             App.Navigator.Navigate("/", replace: true);
             return;
         }
-        var nextKey = query.Length > 0 ? $"q:{query}" : $"l:{Config.ListFor(listId).Id}";
+        string nextKey = query.Length > 0 ? $"q:{query}" : $"l:{Config.ListFor(listId).Id}";
         if (nextKey != _key)
         {
             _scrollAfterLoad = _selected is not null;
@@ -164,33 +186,61 @@ public sealed partial class DiscoverViewModel : PageViewModel
             Panel.Show(_selected, scroll: false);
             return;
         }
-        if (RevealSelected()) RenderResults();
-        foreach (var card in Cards) card.IsSelected = card.Slug == _selected;
+        if (RevealSelected())
+        {
+            RenderResults();
+        }
+
+        foreach (AlbumCardViewModel card in Cards)
+        {
+            card.IsSelected = card.Slug == _selected;
+        }
+
         Panel.Show(_selected);
     }
-    [RelayCommand] void SelectList(string id) => App.Navigator.Navigate("/", "list", id);
     [RelayCommand]
-    void ShowMore()
+    private void SelectList(string id)
+    {
+        App.Navigator.Navigate("/", "list", id);
+    }
+
+    [RelayCommand]
+    private void ShowMore()
     {
         _limit += Config.GridPage;
         RenderResults();
     }
     [RelayCommand]
-    void Retry()
+    private void Retry()
     {
         _key = null;
-        if (_lastRoute is not null) Update(_lastRoute);
+        if (_lastRoute is not null)
+        {
+            Update(_lastRoute);
+        }
     }
-    [RelayCommand] void BackToDiscover() => App.Navigator.Navigate("/");
     [RelayCommand]
-    async Task Random()
+    private void BackToDiscover()
     {
-        if (IsRolling) return;
+        App.Navigator.Navigate("/");
+    }
+
+    [RelayCommand]
+    private async Task Random()
+    {
+        if (IsRolling)
+        {
+            return;
+        }
+
         IsRolling = true;
         try
         {
-            var slug = await App.Catalog.RandomAlbumSlugAsync();
-            if (slug.Length > 0) App.Navigator.SetParam("album", slug);
+            string slug = await App.Catalog.RandomAlbumSlugAsync();
+            if (slug.Length > 0)
+            {
+                App.Navigator.SetParam("album", slug);
+            }
         }
         catch (Exception ex) when (ex is KhinsiderException or OperationCanceledException)
         {

@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:OSTream.ViewModels"
-             xmlns:c="using:OSTream.Controls"
+              xmlns:c="using:OSTream.Frontend.Controls"
              xmlns:comp="using:OSTream.Views.Components"
              x:Class="OSTream.Views.Shell.RailView"
              x:DataType="vm:RailViewModel">

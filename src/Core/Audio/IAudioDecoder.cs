@@ -1,5 +1,6 @@
 using System;
 namespace OSTream.Core.Audio;
+
 public interface IAudioDecoder : IDisposable
 {
     int SampleRate { get; }

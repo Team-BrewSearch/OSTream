@@ -1,7 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using OSTream.Services;
-namespace OSTream.Views.Overlays;
+namespace OSTream.Frontend.Views.Overlays;
+
 public static class ToastHover
 {
     public static void Attach(ItemsControl toasts)
@@ -17,6 +18,13 @@ public static class ToastHover
             e.Container.PointerExited -= OnExited;
         };
     }
-    static void OnEntered(object? sender, PointerEventArgs e) => ((sender as Control)?.DataContext as ToastItem)?.Pause();
-    static void OnExited(object? sender, PointerEventArgs e) => ((sender as Control)?.DataContext as ToastItem)?.Resume();
+    private static void OnEntered(object? sender, PointerEventArgs e)
+    {
+        ((sender as Control)?.DataContext as ToastItem)?.Pause();
+    }
+
+    private static void OnExited(object? sender, PointerEventArgs e)
+    {
+        ((sender as Control)?.DataContext as ToastItem)?.Resume();
+    }
 }

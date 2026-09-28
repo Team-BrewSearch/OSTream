@@ -1,16 +1,21 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using OSTream.Core;
+using OSTream.Core.Downloads;
+using OSTream.Core.Models;
+using OSTream.Core.Player;
+using OSTream.Frontend;
+using OSTream.Frontend.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using OSTream.Core;
-using OSTream.Core.Models;
 namespace OSTream.ViewModels;
+
 public sealed partial class RailViewModel : ViewModelBase
 {
-    readonly AppServices _app;
-    int _upNextVersion = -1;
+    private readonly AppServices _app;
+    private int _upNextVersion = -1;
     public RailViewModel(AppServices app)
     {
         _app = app;
@@ -18,9 +23,20 @@ public sealed partial class RailViewModel : ViewModelBase
         app.Player.Changed += RenderUpNext;
         app.Settings.Changed += (old, now) =>
         {
-            if (old.RailTab != now.RailTab) OnPropertyChanged(nameof(IsDownloadsTab));
-            if (old.RailTab != now.RailTab) OnPropertyChanged(nameof(IsUpNextTab));
-            if (old.RailCollapsed != now.RailCollapsed) OnPropertyChanged(nameof(IsVisible));
+            if (old.RailTab != now.RailTab)
+            {
+                OnPropertyChanged(nameof(IsDownloadsTab));
+            }
+
+            if (old.RailTab != now.RailTab)
+            {
+                OnPropertyChanged(nameof(IsUpNextTab));
+            }
+
+            if (old.RailCollapsed != now.RailCollapsed)
+            {
+                OnPropertyChanged(nameof(IsVisible));
+            }
         };
         RenderDownloads();
         RenderUpNext();
@@ -46,42 +62,93 @@ public sealed partial class RailViewModel : ViewModelBase
     public bool HasNowPlaying => NowPlaying is not null;
     public bool HasUpNext => UpNext.Count > 0;
     public string NextLabel => $"NEXT UP · {UpNextCount}";
-    partial void OnNowPlayingChanged(UpNextItemViewModel? value) => OnPropertyChanged(nameof(HasNowPlaying));
-    partial void OnUpNextChanged(IReadOnlyList<UpNextItemViewModel> value) => OnPropertyChanged(nameof(HasUpNext));
-    partial void OnUpNextCountChanged(int value) => OnPropertyChanged(nameof(NextLabel));
+    partial void OnNowPlayingChanged(UpNextItemViewModel? value)
+    {
+        OnPropertyChanged(nameof(HasNowPlaying));
+    }
+
+    partial void OnUpNextChanged(IReadOnlyList<UpNextItemViewModel> value)
+    {
+        OnPropertyChanged(nameof(HasUpNext));
+    }
+
+    partial void OnUpNextCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(NextLabel));
+    }
+
     public void Toggle(bool? force = null)
     {
-        if (IsNarrow) IsDrawerOpen = force ?? !IsDrawerOpen;
-        else _app.Settings.Update(s => s with { RailCollapsed = !(force ?? s.RailCollapsed) });
+        if (IsNarrow)
+        {
+            IsDrawerOpen = force ?? !IsDrawerOpen;
+        }
+        else
+        {
+            _app.Settings.Update(s => s with { RailCollapsed = !(force ?? s.RailCollapsed) });
+        }
     }
-    [RelayCommand] void Close() => Toggle(false);
-    [RelayCommand] void ShowTab(string tab) => _app.Settings.Update(s => s with { RailTab = tab == "upnext" ? RailTab.UpNext : RailTab.Downloads });
-    [RelayCommand] void ClearFinished() => _app.Downloads.ClearFinished();
-    [RelayCommand] void ViewAll() => _app.Navigator.Navigate("/downloads");
-    [RelayCommand] void ClearUpNext() => _app.Player.ClearUpNext();
-    void RenderDownloads()
+    [RelayCommand]
+    private void Close()
     {
-        var jobs = _app.Downloads.Jobs;
-        var active = jobs.Count(j => j.IsActive);
+        Toggle(false);
+    }
+
+    [RelayCommand]
+    private void ShowTab(string tab)
+    {
+        _app.Settings.Update(s => s with { RailTab = tab == "upnext" ? RailTab.UpNext : RailTab.Downloads });
+    }
+
+    [RelayCommand]
+    private void ClearFinished()
+    {
+        _app.Downloads.ClearFinished();
+    }
+
+    [RelayCommand]
+    private void ViewAll()
+    {
+        _app.Navigator.Navigate("/downloads");
+    }
+
+    [RelayCommand]
+    private void ClearUpNext()
+    {
+        _app.Player.ClearUpNext();
+    }
+
+    private void RenderDownloads()
+    {
+        IReadOnlyList<JobSnapshot> jobs = _app.Downloads.Jobs;
+        int active = jobs.Count(j => j.IsActive);
         DownloadsCount = active > 0 ? active : jobs.Count;
         JobCardViewModel.Sync(_app, Jobs, jobs, detailed: false);
         HasJobs = jobs.Count > 0;
-        if (!HasJobs) return;
-        var totalTracks = jobs.Sum(j => j.Counts.Total);
-        var doneTracks = jobs.Sum(j => j.Counts.Done);
-        var bytesTotal = jobs.Sum(j => j.BytesTotal);
-        var bytesDone = jobs.Sum(j => j.BytesDone);
-        var pct = bytesTotal > 0 ? Formatting.JsRound(bytesDone * 100.0 / bytesTotal) : Formatting.JsRound(doneTracks * 100.0 / Math.Max(1, totalTracks));
+        if (!HasJobs)
+        {
+            return;
+        }
+
+        int totalTracks = jobs.Sum(j => j.Counts.Total);
+        int doneTracks = jobs.Sum(j => j.Counts.Done);
+        long bytesTotal = jobs.Sum(j => j.BytesTotal);
+        long bytesDone = jobs.Sum(j => j.BytesDone);
+        long pct = bytesTotal > 0 ? Formatting.JsRound(bytesDone * 100.0 / bytesTotal) : Formatting.JsRound(doneTracks * 100.0 / Math.Max(1, totalTracks));
         OverallText = $"{doneTracks} / {totalTracks} · {pct}%";
         OverallPercent = pct;
         CanClearFinished = jobs.Count - active > 0;
     }
-    void RenderUpNext()
+    private void RenderUpNext()
     {
-        var player = _app.Player;
-        if (player.Queue.Version == _upNextVersion) return;
+        PlayerService player = _app.Player;
+        if (player.Queue.Version == _upNextVersion)
+        {
+            return;
+        }
+
         _upNextVersion = player.Queue.Version;
-        var upcoming = player.UpNext().ToList();
+        List<(int QueueIndex, Track Track)> upcoming = player.UpNext().ToList();
         UpNextCount = upcoming.Count;
         NowPlaying = player.Current is { } current ? new UpNextItemViewModel(_app, player.CurrentQueueIndex, current, true) : null;
         UpNext = upcoming.Take(Config.UpNextLimit).Select(u => new UpNextItemViewModel(_app, u.QueueIndex, u.Track, false)).ToArray();

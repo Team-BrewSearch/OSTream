@@ -1,6 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:c="using:OSTream.Controls">
+        xmlns:c="using:OSTream.Frontend.Controls">
   <Styles.Resources>
     <ResourceDictionary>
       <ControlTheme x:Key="{x:Type c:StateBlock}" TargetType="c:StateBlock">

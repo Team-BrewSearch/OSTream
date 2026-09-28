@@ -1,13 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OSTream.Core.Models;
 using OSTream.Core.Player;
-using OSTream.Services;
+using OSTream.Frontend;
+using OSTream.Frontend.Services;
+using OSTream.Frontend.ViewModels;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 namespace OSTream.ViewModels;
+
 public sealed record TrackListOptions
 {
     public bool HasCd { get; init; }
@@ -21,17 +24,21 @@ public sealed record TrackListOptions
 }
 public sealed partial class TrackListViewModel : ViewModelBase, IDisposable
 {
-    readonly AppServices _app;
-    readonly Dictionary<string, List<TrackRowViewModel>> _byId = [];
-    List<TrackRowViewModel> _current = [];
+    private readonly AppServices _app;
+    private readonly Dictionary<string, List<TrackRowViewModel>> _byId = [];
+    private List<TrackRowViewModel> _current = [];
     public TrackListViewModel(AppServices app, IReadOnlyList<Track> tracks, TrackListOptions options)
     {
         _app = app;
         Options = options;
         Rows = tracks.Select((t, i) => new TrackRowViewModel(app, this, t, i)).ToArray();
-        foreach (var row in Rows)
+        foreach (TrackRowViewModel row in Rows)
         {
-            if (!_byId.TryGetValue(row.Track.Id, out var list)) _byId[row.Track.Id] = list = [];
+            if (!_byId.TryGetValue(row.Track.Id, out List<TrackRowViewModel>? list))
+            {
+                _byId[row.Track.Id] = list = [];
+            }
+
             list.Add(row);
         }
         app.Player.Changed += SyncPlaying;
@@ -49,52 +56,94 @@ public sealed partial class TrackListViewModel : ViewModelBase, IDisposable
     public string EmptyText => Options.Empty;
     public int Filter(string query)
     {
-        var q = query.Trim();
-        var visible = 0;
-        foreach (var row in Rows)
+        string q = query.Trim();
+        int visible = 0;
+        foreach (TrackRowViewModel row in Rows)
         {
-            var match = q.Length == 0
+            bool match = q.Length == 0
                 || row.Track.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
                 || row.Track.Album.Title.Contains(q, StringComparison.OrdinalIgnoreCase);
             row.IsVisible = match;
-            if (match) visible++;
+            if (match)
+            {
+                visible++;
+            }
         }
         return visible;
     }
     internal void Activate(TrackRowViewModel row)
     {
-        if (row.IsPlaying) _app.Player.Toggle();
-        else Options.OnPlay(row.Index);
+        if (row.IsPlaying)
+        {
+            _app.Player.Toggle();
+        }
+        else
+        {
+            Options.OnPlay(row.Index);
+        }
     }
-    internal void OpenMenu(TrackRowViewModel row, object anchor) =>
-        _app.Actions.OpenTrackMenu(anchor, row.Track, Options.Menu?.Invoke(row.Track, row.Index) ?? new TrackMenuContext());
-    void SyncPlaying()
+    internal void OpenMenu(TrackRowViewModel row, object anchor)
     {
-        var current = _app.Player.Current;
-        var status = _app.Player.Status;
-        var rows = current is not null && _byId.TryGetValue(current.Id, out var list) ? list : [];
-        foreach (var row in _current)
-            if (!rows.Contains(row)) row.SetPlaying(false, status);
-        foreach (var row in rows) row.SetPlaying(true, status);
+        _app.Actions.OpenTrackMenu(anchor, row.Track, Options.Menu?.Invoke(row.Track, row.Index) ?? new TrackMenuContext());
+    }
+
+    private void SyncPlaying()
+    {
+        Track? current = _app.Player.Current;
+        PlayStatus status = _app.Player.Status;
+        List<TrackRowViewModel> rows = current is not null && _byId.TryGetValue(current.Id, out List<TrackRowViewModel>? list) ? list : [];
+        foreach (TrackRowViewModel row in _current)
+        {
+            if (!rows.Contains(row))
+            {
+                row.SetPlaying(false, status);
+            }
+        }
+
+        foreach (TrackRowViewModel row in rows)
+        {
+            row.SetPlaying(true, status);
+        }
+
         _current = rows;
     }
-    void SyncProgress(PlaybackTime time)
+    private void SyncProgress(PlaybackTime time)
     {
-        foreach (var row in _current) row.Progress = time.Duration > 0 ? time.Current / time.Duration : 0;
+        foreach (TrackRowViewModel row in _current)
+        {
+            row.Progress = time.Duration > 0 ? time.Current / time.Duration : 0;
+        }
     }
-    void SyncFavorites(LibraryData old, LibraryData now)
+    private void SyncFavorites(LibraryData old, LibraryData now)
     {
-        if (ReferenceEquals(old.FavTracks, now.FavTracks)) return;
-        foreach (var row in Rows) row.IsFav = _app.Library.IsFavTrack(row.Track.Id);
+        if (ReferenceEquals(old.FavTracks, now.FavTracks))
+        {
+            return;
+        }
+
+        foreach (TrackRowViewModel row in Rows)
+        {
+            row.IsFav = _app.Library.IsFavTrack(row.Track.Id);
+        }
     }
-    void SyncFormat(SettingsData old, SettingsData now)
+    private void SyncFormat(SettingsData old, SettingsData now)
     {
-        if (old.Format == now.Format || Options.Meta is not null) return;
-        foreach (var row in Rows) row.UpdateFormat();
+        if (old.Format == now.Format || Options.Meta is not null)
+        {
+            return;
+        }
+
+        foreach (TrackRowViewModel row in Rows)
+        {
+            row.UpdateFormat();
+        }
     }
     public void RefreshMeta()
     {
-        foreach (var row in Rows) row.UpdateFormat();
+        foreach (TrackRowViewModel row in Rows)
+        {
+            row.UpdateFormat();
+        }
     }
     public void Dispose()
     {
@@ -106,15 +155,15 @@ public sealed partial class TrackListViewModel : ViewModelBase, IDisposable
 }
 public sealed partial class TrackRowViewModel : ViewModelBase
 {
-    readonly AppServices _app;
-    readonly TrackListViewModel _list;
+    private readonly AppServices _app;
+    private readonly TrackListViewModel _list;
     internal TrackRowViewModel(AppServices app, TrackListViewModel list, Track track, int index)
     {
         _app = app;
         _list = list;
         Track = track;
         Index = index;
-        var number = list.Options.AlbumNumbering && track.Number.Length > 0 ? track.Number : (index + 1).ToString(CultureInfo.InvariantCulture);
+        string number = list.Options.AlbumNumbering && track.Number.Length > 0 ? track.Number : (index + 1).ToString(CultureInfo.InvariantCulture);
         Number = number.PadLeft(2, '0');
         IsFav = app.Library.IsFavTrack(track.Id);
         UpdateFormat();
@@ -151,10 +200,14 @@ public sealed partial class TrackRowViewModel : ViewModelBase
             IsFallback = false;
             return;
         }
-        var fmt = _app.Settings.Value.Format;
-        foreach (var format in fmt.Preference())
+        AudioFormat fmt = _app.Settings.Value.Format;
+        foreach (AudioFormat format in fmt.Preference())
         {
-            if (!Track.Sizes.TryGetValue(format.Key(), out var size)) continue;
+            if (!Track.Sizes.TryGetValue(format.Key(), out string? size))
+            {
+                continue;
+            }
+
             (FormatMain, FormatSize, IsFallback, FallbackTip) = format == fmt
                 ? (fmt.Label(), $" · {size}", false, null)
                 : (format.Label(), $" · {size}", true, $"No {fmt.Label()} for this track");
@@ -167,11 +220,38 @@ public sealed partial class TrackRowViewModel : ViewModelBase
         IsPlaying = current;
         IsPaused = current && status == PlayStatus.Paused;
         IsLoading = current && status == PlayStatus.Loading;
-        if (!current) Progress = 0;
+        if (!current)
+        {
+            Progress = 0;
+        }
     }
-    [RelayCommand] void Activate() => _list.Activate(this);
-    [RelayCommand] void ToggleFavorite() => _app.Actions.ToggleFavorite(Track);
-    [RelayCommand] void Download() => _app.Downloads.DownloadTrack(Track);
-    [RelayCommand] void More(object anchor) => _list.OpenMenu(this, anchor);
-    [RelayCommand] void OpenAlbum() => _app.Navigator.Navigate(UserActions.AlbumRoute(Track.Album.Slug));
+    [RelayCommand]
+    private void Activate()
+    {
+        _list.Activate(this);
+    }
+
+    [RelayCommand]
+    private void ToggleFavorite()
+    {
+        _app.Actions.ToggleFavorite(Track);
+    }
+
+    [RelayCommand]
+    private void Download()
+    {
+        _app.Downloads.DownloadTrack(Track);
+    }
+
+    [RelayCommand]
+    private void More(object anchor)
+    {
+        _list.OpenMenu(this, anchor);
+    }
+
+    [RelayCommand]
+    private void OpenAlbum()
+    {
+        _app.Navigator.Navigate(UserActions.AlbumRoute(Track.Album.Slug));
+    }
 }

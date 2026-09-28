@@ -1,9 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:OSTream.ViewModels"
-             xmlns:c="using:OSTream.Controls"
-             xmlns:comp="using:OSTream.Views.Components"
-             x:Class="OSTream.Views.Components.AlbumPanelView"
+              xmlns:vm="using:OSTream.ViewModels"
+               xmlns:c="using:OSTream.Frontend.Controls"
+              xmlns:comp="using:OSTream.Views.Components"
+              xmlns:fcomp="using:OSTream.Frontend.Views.Components"
+              x:Class="OSTream.Views.Components.AlbumPanelView"
              x:DataType="vm:AlbumPanelViewModel"
              IsVisible="{Binding IsVisible}">
   <UserControl.Styles>
@@ -102,7 +103,7 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock FontSize="12" LineHeight="19" Foreground="{DynamicResource Text3}" TextWrapping="Wrap" comp:RichText.Parts="{Binding Meta}" />
+            <TextBlock FontSize="12" LineHeight="19" Foreground="{DynamicResource Text3}" TextWrapping="Wrap" fcomp:RichText.Parts="{Binding Meta}" />
           </StackPanel>
           <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="8" LineSpacing="8" Margin="0,16,0,0" VerticalAlignment="Bottom">
             <Button Classes="btn primary" Command="{Binding PlayCommand}"><c:IconText Kind="Play" IconSize="13" Text="Play album" /></Button>

@@ -1,11 +1,12 @@
-using System.Collections.Generic;
-using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Layout;
 using Avalonia.Media;
-namespace OSTream.Controls;
+using System.Collections.Generic;
+using System.Globalization;
+namespace OSTream.Frontend.Controls;
+
 public enum IconKind
 {
     None,
@@ -33,32 +34,58 @@ public sealed class Icon : Control
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == SizeProperty) InvalidateMeasure();
+        if (change.Property == SizeProperty)
+        {
+            InvalidateMeasure();
+        }
     }
-    protected override Size MeasureOverride(Size availableSize) => new(Size, Size);
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        return new(Size, Size);
+    }
+
     public override void Render(DrawingContext context)
     {
-        if (Kind == IconKind.None || Foreground is not { } brush || !Glyphs.TryGetValue(Kind, out var glyph)) return;
-        var scale = Size / 24;
+        if (Kind == IconKind.None || Foreground is not { } brush || !Glyphs.TryGetValue(Kind, out Glyph? glyph))
+        {
+            return;
+        }
+
+        double scale = Size / 24;
         using (context.PushTransform(Matrix.CreateScale(scale, scale)))
         {
-            if (glyph.Fill is not null) context.DrawGeometry(brush, null, glyph.Fill);
+            if (glyph.Fill is not null)
+            {
+                context.DrawGeometry(brush, null, glyph.Fill);
+            }
+
             if (glyph.Stroke is not null)
             {
-                var width = double.IsNaN(StrokeWidth) ? glyph.Width : StrokeWidth;
+                double width = double.IsNaN(StrokeWidth) ? glyph.Width : StrokeWidth;
                 context.DrawGeometry(glyph.FillStroke ? brush : null, new Pen(brush, width, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round), glyph.Stroke);
             }
         }
     }
-    sealed record Glyph(Geometry? Stroke, Geometry? Fill, double Width, bool FillStroke = false);
-    static StreamGeometry G(string data) => StreamGeometry.Parse(data);
-    static string Circle(double cx, double cy, double r) =>
-        string.Create(CultureInfo.InvariantCulture, $"M{cx - r} {cy}a{r} {r} 0 1 0 {2 * r} 0a{r} {r} 0 1 0 {-2 * r} 0z");
-    static Glyph S(string path, double width = 2) => new(G(path), null, width);
-    const string HeartPath = "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z";
-    const string RepeatPath = "M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3";
-    const string SpeakerPath = "M11 5L6 9H2v6h4l5 4z";
-    static readonly Dictionary<IconKind, Glyph> Glyphs = new()
+    private sealed record Glyph(Geometry? Stroke, Geometry? Fill, double Width, bool FillStroke = false);
+    private static StreamGeometry G(string data)
+    {
+        return StreamGeometry.Parse(data);
+    }
+
+    private static string Circle(double cx, double cy, double r)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"M{cx - r} {cy}a{r} {r} 0 1 0 {2 * r} 0a{r} {r} 0 1 0 {-2 * r} 0z");
+    }
+
+    private static Glyph S(string path, double width = 2)
+    {
+        return new(G(path), null, width);
+    }
+
+    private const string HeartPath = "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z";
+    private const string RepeatPath = "M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3";
+    private const string SpeakerPath = "M11 5L6 9H2v6h4l5 4z";
+    private static readonly Dictionary<IconKind, Glyph> Glyphs = new()
     {
         [IconKind.Play] = new(null, G("M7 4.5v15l13-7.5z"), 0),
         [IconKind.Pause] = new(null, G("M7 5h4v14H7zM13 5h4v14h-4z"), 0),

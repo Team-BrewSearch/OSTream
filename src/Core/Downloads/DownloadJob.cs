@@ -1,9 +1,10 @@
+using OSTream.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using OSTream.Core.Models;
 namespace OSTream.Core.Downloads;
+
 public enum JobStatus { Queued, Running, Done, Partial, Error, Canceled }
 public enum TrackStatus { Queued, Resolving, Downloading, Done, Skipped, Error, Canceled }
 public sealed record DownloadTrackRequest(string Title, string Number, string Cd, string Path, int Pad, long EstBytes);
@@ -44,7 +45,7 @@ public sealed record JobSnapshot(
     {
         get
         {
-            var formats = Tracks.Select(t => t.Fallback).OfType<string>().Distinct().ToArray();
+            string[] formats = Tracks.Select(t => t.Fallback).OfType<string>().Distinct().ToArray();
             return formats.Length == 1 ? formats[0].ToUpperInvariant() : "other formats";
         }
     }
@@ -67,22 +68,26 @@ internal sealed class DownloadTrack(DownloadTrackRequest request)
     public void Reset()
     {
         Status = TrackStatus.Queued;
-        Interlocked.Exchange(ref Bytes, 0);
-        Interlocked.Exchange(ref Total, 0);
+        _ = Interlocked.Exchange(ref Bytes, 0);
+        _ = Interlocked.Exchange(ref Total, 0);
         Error = null;
         Fallback = null;
     }
-    public TrackSnapshot Snapshot() => new(Title, Number, Cd, Status, Interlocked.Read(ref Bytes), Size, Error, Fallback);
+    public TrackSnapshot Snapshot()
+    {
+        return new(Title, Number, Cd, Status, Interlocked.Read(ref Bytes), Size, Error, Fallback);
+    }
+
     internal static string Clip(string? value, int max, string fallback = "")
     {
-        var s = string.IsNullOrEmpty(value) ? fallback : value;
+        string s = string.IsNullOrEmpty(value) ? fallback : value;
         return s.Length > max ? s[..max] : s;
     }
 }
 internal sealed class DownloadJob
 {
-    readonly Queue<(long Time, long Bytes)> _samples = new();
-    JobSnapshot? _final;
+    private readonly Queue<(long Time, long Bytes)> _samples = new();
+    private JobSnapshot? _final;
     public DownloadJob(DownloadRequest request)
     {
         Id = Guid.NewGuid().ToString("N")[..10];
@@ -112,13 +117,18 @@ internal sealed class DownloadJob
     public bool IsActive => Status is JobStatus.Queued or JobStatus.Running;
     public void Finish()
     {
-        var failed = Tracks.Count(t => t.Status == TrackStatus.Error);
-        var done = Tracks.Count(t => t.Finished);
+        int failed = Tracks.Count(t => t.Status == TrackStatus.Error);
+        int done = Tracks.Count(t => t.Finished);
         if (Cancel.IsCancellationRequested)
         {
             Status = JobStatus.Canceled;
-            foreach (var t in Tracks)
-                if (t.Status is TrackStatus.Queued or TrackStatus.Resolving or TrackStatus.Downloading) t.Status = TrackStatus.Canceled;
+            foreach (DownloadTrack t in Tracks)
+            {
+                if (t.Status is TrackStatus.Queued or TrackStatus.Resolving or TrackStatus.Downloading)
+                {
+                    t.Status = TrackStatus.Canceled;
+                }
+            }
         }
         else if (failed == 0)
         {
@@ -132,52 +142,82 @@ internal sealed class DownloadJob
     }
     public void Fail(string error)
     {
-        foreach (var t in Tracks)
+        foreach (DownloadTrack t in Tracks)
         {
-            if (t.Status is not (TrackStatus.Queued or TrackStatus.Resolving or TrackStatus.Downloading)) continue;
+            if (t.Status is not (TrackStatus.Queued or TrackStatus.Resolving or TrackStatus.Downloading))
+            {
+                continue;
+            }
+
             t.Error = error;
             t.Status = TrackStatus.Error;
         }
         Status = JobStatus.Error;
         Error = error;
     }
-    long Speed(long bytesDone)
+    private long Speed(long bytesDone)
     {
-        var now = Environment.TickCount64;
+        long now = Environment.TickCount64;
         lock (_samples)
         {
             _samples.Enqueue((now, bytesDone));
-            while (_samples.Count > 40) _samples.Dequeue();
-            while (_samples.Count > 2 && now - _samples.Peek().Time > 5000) _samples.Dequeue();
-            if (Status != JobStatus.Running || _samples.Count < 2) return 0;
-            var (t0, b0) = _samples.Peek();
+            while (_samples.Count > 40)
+            {
+                _ = _samples.Dequeue();
+            }
+
+            while (_samples.Count > 2 && now - _samples.Peek().Time > 5000)
+            {
+                _ = _samples.Dequeue();
+            }
+
+            if (Status != JobStatus.Running || _samples.Count < 2)
+            {
+                return 0;
+            }
+
+            (long t0, long b0) = _samples.Peek();
             return now > t0 ? Math.Max(0, (bytesDone - b0) * 1000 / (now - t0)) : 0;
         }
     }
     public JobSnapshot Snapshot()
     {
-        if (_final is { } final && !IsActive) return final;
-        var tracks = new TrackSnapshot[Tracks.Length];
+        if (_final is { } final && !IsActive)
+        {
+            return final;
+        }
+
+        TrackSnapshot[] tracks = new TrackSnapshot[Tracks.Length];
         long done = 0, total = 0;
-        for (var i = 0; i < Tracks.Length; i++)
+        for (int i = 0; i < Tracks.Length; i++)
         {
             tracks[i] = Tracks[i].Snapshot();
             done += tracks[i].Bytes;
             total += tracks[i].Total;
         }
         total = Math.Max(total, done);
-        var speed = Speed(done);
+        long speed = Speed(done);
         int doneCount = 0, failed = 0, fallback = 0;
-        for (var i = 0; i < tracks.Length; i++)
+        for (int i = 0; i < tracks.Length; i++)
         {
-            var t = tracks[i];
-            if (t.Status is TrackStatus.Done or TrackStatus.Skipped) doneCount++;
-            else if (t.Status == TrackStatus.Error) failed++;
-            if (t.Fallback is not null) fallback++;
+            TrackSnapshot t = tracks[i];
+            if (t.Status is TrackStatus.Done or TrackStatus.Skipped)
+            {
+                doneCount++;
+            }
+            else if (t.Status == TrackStatus.Error)
+            {
+                failed++;
+            }
+
+            if (t.Fallback is not null)
+            {
+                fallback++;
+            }
         }
-        var counts = new JobCounts(tracks.Length, doneCount, failed, fallback);
+        JobCounts counts = new(tracks.Length, doneCount, failed, fallback);
         double? eta = speed > 0 && total > done ? Math.Round((double)(total - done) / speed) : null;
-        var snapshot = new JobSnapshot(Id, Title, Subtitle, Folder, Format, Cover, AlbumUrl, Status, Error, Path, counts, done, total, speed, eta, tracks);
+        JobSnapshot snapshot = new(Id, Title, Subtitle, Folder, Format, Cover, AlbumUrl, Status, Error, Path, counts, done, total, speed, eta, tracks);
         _final = snapshot.IsActive ? null : snapshot;
         return snapshot;
     }

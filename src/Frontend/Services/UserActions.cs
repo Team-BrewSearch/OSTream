@@ -1,13 +1,15 @@
+using OSTream.Core;
+using OSTream.Core.Khinsider;
+using OSTream.Core.Models;
+using OSTream.Frontend.Controls;
+using OSTream.Services;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using OSTream.Controls;
-using OSTream.Core;
-using OSTream.Core.Khinsider;
-using OSTream.Core.Models;
-namespace OSTream.Services;
+namespace OSTream.Frontend.Services;
+
 public sealed record TrackMenuContext(bool InAlbum = false, string? PlaylistId = null, int Index = 0, int Count = 0);
 public sealed class UserActions(AppServices app)
 {
@@ -15,7 +17,7 @@ public sealed class UserActions(AppServices app)
     {
         try
         {
-            var album = await app.Catalog.GetAlbumAsync(slug);
+            Album album = await app.Catalog.GetAlbumAsync(slug);
             app.Player.PlayList(album.Tracks, 0, shuffle ? true : null);
         }
         catch (Exception ex) when (ex is KhinsiderException or OperationCanceledException)
@@ -25,21 +27,25 @@ public sealed class UserActions(AppServices app)
     }
     public void ToggleFavorite(Track track)
     {
-        var on = app.Library.ToggleFavTrack(track);
+        bool on = app.Library.ToggleFavTrack(track);
         app.Toasts.Toast(on ? $"Added “{track.Title}” to favorites" : $"Removed “{track.Title}” from favorites", on ? ToastKind.Success : ToastKind.Info);
     }
     public void ToggleFavorite(Album album)
     {
-        var on = app.Library.ToggleFavAlbum(album.ToSummary());
+        bool on = app.Library.ToggleFavAlbum(album.ToSummary());
         app.Toasts.Toast(on ? $"Added “{album.Title}” to favorites" : $"Removed “{album.Title}” from favorites", on ? ToastKind.Success : ToastKind.Info);
     }
     public async void NewPlaylistWith(IReadOnlyList<Track> tracks)
     {
         try
         {
-            var name = await app.Dialogs.PromptAsync("New playlist", placeholder: "My playlist", confirm: "Create");
-            if (name is null) return;
-            var playlist = app.Library.CreatePlaylist(name, tracks);
+            string? name = await app.Dialogs.PromptAsync("New playlist", placeholder: "My playlist", confirm: "Create");
+            if (name is null)
+            {
+                return;
+            }
+
+            Playlist playlist = app.Library.CreatePlaylist(name, tracks);
             app.Toasts.Toast($"Created “{playlist.Name}”", ToastKind.Success, Formatting.Plural(tracks.Count, "track"),
                 new ToastAction("View", () => app.Navigator.Navigate($"/playlists/{playlist.Id}")));
         }
@@ -50,12 +56,16 @@ public sealed class UserActions(AppServices app)
     }
     public IReadOnlyList<MenuEntry> PlaylistSubmenu(IReadOnlyList<Track> tracks)
     {
-        var playlists = app.Library.Value.Playlists;
-        var entries = new List<MenuEntry> { new("New playlist…", IconKind.Plus, () => NewPlaylistWith(tracks)) };
-        if (playlists.Count > 0) entries.Add(MenuEntry.Separator);
+        IReadOnlyList<Playlist> playlists = app.Library.Value.Playlists;
+        List<MenuEntry> entries = [new("New playlist…", IconKind.Plus, () => NewPlaylistWith(tracks))];
+        if (playlists.Count > 0)
+        {
+            entries.Add(MenuEntry.Separator);
+        }
+
         entries.AddRange(playlists.Select(p => new MenuEntry(p.Name, IconKind.Book, () =>
         {
-            var added = app.Library.AddToPlaylist(p.Id, tracks);
+            int added = app.Library.AddToPlaylist(p.Id, tracks);
             app.Toasts.Toast(added > 0 ? $"Added {Formatting.Plural(added, "track")} to “{p.Name}”" : $"Already in “{p.Name}”",
                 added > 0 ? ToastKind.Success : ToastKind.Info);
         }, Hint: p.Tracks.Count.ToString(CultureInfo.InvariantCulture))));
@@ -63,9 +73,9 @@ public sealed class UserActions(AppServices app)
     }
     public void OpenTrackMenu(object anchor, Track track, TrackMenuContext context)
     {
-        var fav = app.Library.IsFavTrack(track.Id);
-        var items = new List<MenuEntry>
-        {
+        bool fav = app.Library.IsFavTrack(track.Id);
+        List<MenuEntry> items =
+        [
             new("Play next", IconKind.PlayNext, () =>
             {
                 app.Player.PlayNext([track]);
@@ -80,21 +90,34 @@ public sealed class UserActions(AppServices app)
             MenuEntry.Separator,
             new(fav ? "Remove from favorites" : "Add to favorites", fav ? IconKind.HeartFill : IconKind.Heart, () => ToggleFavorite(track)),
             new("Download", IconKind.Download, () => app.Downloads.DownloadTrack(track)),
-        };
+        ];
         if (context.PlaylistId is { } playlistId)
         {
             items.Add(MenuEntry.Separator);
-            if (context.Index > 0) items.Add(new("Move up", IconKind.Up, () => app.Library.MoveInPlaylist(playlistId, context.Index, context.Index - 1)));
-            if (context.Index < context.Count - 1) items.Add(new("Move down", IconKind.Down, () => app.Library.MoveInPlaylist(playlistId, context.Index, context.Index + 1)));
+            if (context.Index > 0)
+            {
+                items.Add(new("Move up", IconKind.Up, () => app.Library.MoveInPlaylist(playlistId, context.Index, context.Index - 1)));
+            }
+
+            if (context.Index < context.Count - 1)
+            {
+                items.Add(new("Move down", IconKind.Down, () => app.Library.MoveInPlaylist(playlistId, context.Index, context.Index + 1)));
+            }
+
             items.Add(new("Remove from playlist", IconKind.Trash, () => app.Library.RemoveFromPlaylist(playlistId, context.Index), Danger: true));
         }
         items.Add(MenuEntry.Separator);
         if (!context.InAlbum && track.Album.Slug.Length > 0)
+        {
             items.Add(new("Go to album", IconKind.ChevronRight, () => app.Navigator.Navigate(AlbumRoute(track.Album.Slug))));
+        }
+
         items.Add(new("Open on KHInsider", IconKind.External, () => _ = app.Shell.OpenUrl(Formatting.SiteUrl(track.Path))));
         app.Menus.Open(anchor, items);
     }
-    public void OpenAlbumMenu(object anchor, Album album) => app.Menus.Open(anchor,
+    public void OpenAlbumMenu(object anchor, Album album)
+    {
+        app.Menus.Open(anchor,
     [
         new("Play next", IconKind.PlayNext, () =>
         {
@@ -111,5 +134,10 @@ public sealed class UserActions(AppServices app)
         new("Copy link", IconKind.Link, () => _ = app.Shell.CopyText(Formatting.AlbumUrl(album.Slug))),
         new("Open on KHInsider", IconKind.External, () => _ = app.Shell.OpenUrl(Formatting.AlbumUrl(album.Slug))),
     ]);
-    public static string AlbumRoute(string slug) => "/album/" + Formatting.EncodeUriComponent(slug);
+    }
+
+    public static string AlbumRoute(string slug)
+    {
+        return "/album/" + Formatting.EncodeUriComponent(slug);
+    }
 }

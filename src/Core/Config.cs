@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 namespace OSTream.Core;
+
 public sealed record AlbumListInfo(string Id, string Label, string Title, string Path, bool Ranked);
 public static class Config
 {
@@ -31,8 +32,14 @@ public static class Config
     public const string UserAgent = "OSTream/1.0 (+https://github.com/Team-BrewSearch/OSTream)";
     public static AlbumListInfo ListFor(string? id)
     {
-        foreach (var list in Lists)
-            if (list.Id == id) return list;
+        foreach (AlbumListInfo list in Lists)
+        {
+            if (list.Id == id)
+            {
+                return list;
+            }
+        }
+
         return Lists[0];
     }
 }

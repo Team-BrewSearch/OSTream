@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 namespace OSTream.Core.Html;
+
 public sealed class HtmlNode
 {
     public const string TextName = "#text";
     public const string CommentName = "#comment";
     public const string DocumentName = "#document";
-    List<KeyValuePair<string, string>>? _attributes;
-    List<HtmlNode>? _childNodes;
+    private List<KeyValuePair<string, string>>? _attributes;
+    private List<HtmlNode>? _childNodes;
     internal HtmlNode(string name, string? data = null)
     {
         Name = name;
@@ -28,47 +29,86 @@ public sealed class HtmlNode
     internal void SetAttribute(string name, string value)
     {
         _attributes ??= [];
-        foreach (var pair in _attributes)
-            if (pair.Key == name) return; 
+        foreach (KeyValuePair<string, string> pair in _attributes)
+        {
+            if (pair.Key == name)
+            {
+                return;
+            }
+        }
+
         _attributes.Add(new(name, value));
     }
     public string? Attr(string name)
     {
-        if (_attributes is null) return null;
-        foreach (var pair in _attributes)
-            if (pair.Key == name) return pair.Value;
+        if (_attributes is null)
+        {
+            return null;
+        }
+
+        foreach (KeyValuePair<string, string> pair in _attributes)
+        {
+            if (pair.Key == name)
+            {
+                return pair.Value;
+            }
+        }
+
         return null;
     }
     public string Id => Attr("id") ?? "";
     public bool HasClass(string className)
     {
-        var value = Attr("class").AsSpan();
-        foreach (var range in value.SplitAny(" \t\n\r\f"))
-            if (value[range].SequenceEqual(className)) return true;
+        ReadOnlySpan<char> value = Attr("class").AsSpan();
+        foreach (Range range in value.SplitAny(" \t\n\r\f"))
+        {
+            if (value[range].SequenceEqual(className))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
     public IEnumerable<HtmlNode> Children
     {
         get
         {
-            if (_childNodes is null) yield break;
-            foreach (var child in _childNodes)
-                if (child.IsElement) yield return child;
+            if (_childNodes is null)
+            {
+                yield break;
+            }
+
+            foreach (HtmlNode child in _childNodes)
+            {
+                if (child.IsElement)
+                {
+                    yield return child;
+                }
+            }
         }
     }
     public IEnumerable<HtmlNode> Descendants()
     {
-        if (_childNodes is null) yield break;
-        var stack = new Stack<(HtmlNode Node, int Index)>();
+        if (_childNodes is null)
+        {
+            yield break;
+        }
+
+        Stack<(HtmlNode Node, int Index)> stack = new();
         stack.Push((this, 0));
         while (stack.Count > 0)
         {
-            var (node, index) = stack.Pop();
-            var children = node._childNodes!;
-            for (var i = index; i < children.Count; i++)
+            (HtmlNode? node, int index) = stack.Pop();
+            List<HtmlNode> children = node._childNodes!;
+            for (int i = index; i < children.Count; i++)
             {
-                var child = children[i];
-                if (!child.IsElement) continue;
+                HtmlNode child = children[i];
+                if (!child.IsElement)
+                {
+                    continue;
+                }
+
                 yield return child;
                 if (child._childNodes is { Count: > 0 })
                 {
@@ -81,62 +121,107 @@ public sealed class HtmlNode
     }
     public IEnumerable<HtmlNode> Descendants(string name)
     {
-        foreach (var node in Descendants())
-            if (node.Name == name) yield return node;
+        foreach (HtmlNode node in Descendants())
+        {
+            if (node.Name == name)
+            {
+                yield return node;
+            }
+        }
     }
     public HtmlNode? First(Func<HtmlNode, bool> match)
     {
-        foreach (var node in Descendants())
-            if (match(node)) return node;
+        foreach (HtmlNode node in Descendants())
+        {
+            if (match(node))
+            {
+                return node;
+            }
+        }
+
         return null;
     }
     public HtmlNode? First(string name)
     {
-        foreach (var node in Descendants())
-            if (node.Name == name) return node;
+        foreach (HtmlNode node in Descendants())
+        {
+            if (node.Name == name)
+            {
+                return node;
+            }
+        }
+
         return null;
     }
-    public HtmlNode? ById(string id) => First(n => n.Id == id);
+    public HtmlNode? ById(string id)
+    {
+        return First(n => n.Id == id);
+    }
+
     public IEnumerable<HtmlNode> Ancestors()
     {
-        for (var node = Parent; node is not null; node = node.Parent) yield return node;
+        for (HtmlNode? node = Parent; node is not null; node = node.Parent)
+        {
+            yield return node;
+        }
     }
     public string TextContent
     {
         get
         {
-            if (!IsElement && !ReferenceEquals(Name, DocumentName)) return Data ?? "";
-            var sb = new StringBuilder();
+            if (!IsElement && !ReferenceEquals(Name, DocumentName))
+            {
+                return Data ?? "";
+            }
+
+            StringBuilder sb = new();
             AppendText(sb);
             return sb.ToString();
         }
     }
-    void AppendText(StringBuilder sb)
+    private void AppendText(StringBuilder sb)
     {
-        if (_childNodes is null) return;
-        foreach (var child in _childNodes)
+        if (_childNodes is null)
         {
-            if (child.IsText) sb.Append(child.Data);
-            else if (child.IsElement) child.AppendText(sb);
+            return;
+        }
+
+        foreach (HtmlNode child in _childNodes)
+        {
+            if (child.IsText)
+            {
+                _ = sb.Append(child.Data);
+            }
+            else if (child.IsElement)
+            {
+                child.AppendText(sb);
+            }
         }
     }
     public string Text => Collapse(TextContent);
     public static string Collapse(string text)
     {
-        var sb = new StringBuilder(text.Length);
-        var pendingSpace = false;
-        foreach (var c in text)
+        StringBuilder sb = new(text.Length);
+        bool pendingSpace = false;
+        foreach (char c in text)
         {
             if (char.IsWhiteSpace(c) || c == '﻿')
             {
                 pendingSpace = sb.Length > 0;
                 continue;
             }
-            if (pendingSpace) sb.Append(' ');
+            if (pendingSpace)
+            {
+                _ = sb.Append(' ');
+            }
+
             pendingSpace = false;
-            sb.Append(c);
+            _ = sb.Append(c);
         }
         return sb.ToString();
     }
-    public override string ToString() => IsElement ? $"<{Name}>" : Data ?? Name;
+    public override string ToString()
+    {
+        return IsElement ? $"<{Name}>" : Data ?? Name;
+    }
 }

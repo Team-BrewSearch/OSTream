@@ -1,18 +1,21 @@
-using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using OSTream.Controls;
 using OSTream.Core;
 using OSTream.Core.Models;
 using OSTream.Core.Player;
-using OSTream.Services;
+using OSTream.Frontend;
+using OSTream.Frontend.Controls;
+using OSTream.Frontend.Services;
+using OSTream.Frontend.ViewModels;
+using System;
 namespace OSTream.ViewModels;
+
 public sealed partial class PlayerBarViewModel : ViewModelBase
 {
-    readonly AppServices _app;
-    readonly RailViewModel _rail;
-    bool _seeking;
-    long _shownCurrent = -1, _shownTotal = -1; 
+    private readonly AppServices _app;
+    private readonly RailViewModel _rail;
+    private bool _seeking;
+    private long _shownCurrent = -1, _shownTotal = -1;
     public PlayerBarViewModel(AppServices app, RailViewModel rail)
     {
         _app = app;
@@ -24,7 +27,10 @@ public sealed partial class PlayerBarViewModel : ViewModelBase
         app.Downloads.Changed += () => QueueCount = app.Downloads.ActiveCount;
         rail.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(RailViewModel.IsVisible)) OnPropertyChanged(nameof(IsQueueOn));
+            if (e.PropertyName == nameof(RailViewModel.IsVisible))
+            {
+                OnPropertyChanged(nameof(IsQueueOn));
+            }
         };
         RenderTrack();
         RenderModes();
@@ -75,11 +81,15 @@ public sealed partial class PlayerBarViewModel : ViewModelBase
         OnPropertyChanged(nameof(VolumeIcon));
         OnPropertyChanged(nameof(MuteLabel));
     }
-    partial void OnIsLikedChanged(bool value) => OnPropertyChanged(nameof(LikeLabel));
-    void RenderTrack()
+    partial void OnIsLikedChanged(bool value)
     {
-        var player = _app.Player;
-        var track = player.Current;
+        OnPropertyChanged(nameof(LikeLabel));
+    }
+
+    private void RenderTrack()
+    {
+        PlayerService player = _app.Player;
+        Track? track = player.Current;
         HasTrack = track is not null;
         Title = track?.Title ?? "Not playing";
         Thumb = track?.Album.Thumb ?? "";
@@ -93,30 +103,50 @@ public sealed partial class PlayerBarViewModel : ViewModelBase
         IsLoading = player.Status == PlayStatus.Loading;
         CanNext = HasTrack && (player.Queue.HasNext || _app.Settings.Value.Repeat == RepeatMode.All);
         RenderLike();
-        if (HasTrack) return;
+        if (HasTrack)
+        {
+            return;
+        }
+
         TotalTime = "0:00";
         _shownTotal = 0;
     }
-    void RenderLike() => IsLiked = _app.Player.Current is { } t && _app.Library.IsFavTrack(t.Id);
-    void RenderModes()
+    private void RenderLike()
     {
-        var s = _app.Settings.Value;
+        IsLiked = _app.Player.Current is { } t && _app.Library.IsFavTrack(t.Id);
+    }
+
+    private void RenderModes()
+    {
+        SettingsData s = _app.Settings.Value;
         Shuffle = s.Shuffle;
         Repeat = s.Repeat;
         Volume = s.Muted ? 0 : s.Volume;
     }
-    void RenderTime(PlaybackTime time)
+    private void RenderTime(PlaybackTime time)
     {
         Duration = time.Duration;
         if (!_seeking)
         {
-            if ((long)time.Current != _shownCurrent) CurrentTime = Formatting.Time(_shownCurrent = (long)time.Current);
+            if ((long)time.Current != _shownCurrent)
+            {
+                CurrentTime = Formatting.Time(_shownCurrent = (long)time.Current);
+            }
+
             SeekValue = time.Duration > 0 ? time.Current / time.Duration : 0;
         }
-        if ((long)time.Duration != _shownTotal) TotalTime = Formatting.Time(_shownTotal = (long)time.Duration);
+        if ((long)time.Duration != _shownTotal)
+        {
+            TotalTime = Formatting.Time(_shownTotal = (long)time.Duration);
+        }
+
         Buffered = time.Duration > 0 ? Math.Min(1, time.Buffered / time.Duration) : 0;
     }
-    public string TimeAt(double ratio) => Formatting.Time(ratio * Duration);
+    public string TimeAt(double ratio)
+    {
+        return Formatting.Time(ratio * Duration);
+    }
+
     public void SeekInput(double ratio)
     {
         _seeking = true;
@@ -128,7 +158,11 @@ public sealed partial class PlayerBarViewModel : ViewModelBase
         _seeking = false;
         _app.Player.Seek(ratio * Duration);
     }
-    public void SetVolume(double ratio) => _app.Player.SetVolume(ratio);
+    public void SetVolume(double ratio)
+    {
+        _app.Player.SetVolume(ratio);
+    }
+
     public void PreviewVolume(double ratio)
     {
         Volume = Math.Clamp(ratio, 0, 1);
@@ -136,24 +170,65 @@ public sealed partial class PlayerBarViewModel : ViewModelBase
     }
     public void NudgeVolume(double delta)
     {
-        var s = _app.Settings.Value;
+        SettingsData s = _app.Settings.Value;
         _app.Player.SetVolume((s.Muted ? 0 : s.Volume) + delta);
     }
-    [RelayCommand] void Toggle() => _app.Player.Toggle();
-    [RelayCommand] void Prev() => _app.Player.Prev();
-    [RelayCommand] void Next() => _app.Player.Next();
-    [RelayCommand] void ToggleShuffle() => _app.Player.ToggleShuffle();
-    [RelayCommand] void CycleRepeat() => _app.Player.CycleRepeat();
-    [RelayCommand] void ToggleMute() => _app.Player.ToggleMute();
-    [RelayCommand] void ToggleQueue() => _rail.Toggle();
     [RelayCommand]
-    void Like()
+    private void Toggle()
     {
-        if (_app.Player.Current is { } t) _app.Actions.ToggleFavorite(t);
+        _app.Player.Toggle();
+    }
+
+    [RelayCommand]
+    private void Prev()
+    {
+        _app.Player.Prev();
+    }
+
+    [RelayCommand]
+    private void Next()
+    {
+        _app.Player.Next();
+    }
+
+    [RelayCommand]
+    private void ToggleShuffle()
+    {
+        _app.Player.ToggleShuffle();
+    }
+
+    [RelayCommand]
+    private void CycleRepeat()
+    {
+        _app.Player.CycleRepeat();
+    }
+
+    [RelayCommand]
+    private void ToggleMute()
+    {
+        _app.Player.ToggleMute();
+    }
+
+    [RelayCommand]
+    private void ToggleQueue()
+    {
+        _rail.Toggle();
+    }
+
+    [RelayCommand]
+    private void Like()
+    {
+        if (_app.Player.Current is { } t)
+        {
+            _app.Actions.ToggleFavorite(t);
+        }
     }
     [RelayCommand]
-    void OpenAlbum()
+    private void OpenAlbum()
     {
-        if (_app.Player.Current?.Album.Slug is { Length: > 0 } slug) _app.Navigator.Navigate(UserActions.AlbumRoute(slug));
+        if (_app.Player.Current?.Album.Slug is { Length: > 0 } slug)
+        {
+            _app.Navigator.Navigate(UserActions.AlbumRoute(slug));
+        }
     }
 }

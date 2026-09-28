@@ -1,24 +1,28 @@
-using System;
-using System.ComponentModel;
-using System.Linq;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using OSTream.Controls;
 using OSTream.Core.Models;
+using OSTream.Core.Player;
+using OSTream.Frontend.Controls;
+using OSTream.Frontend.ViewModels;
 using OSTream.ViewModels;
 using OSTream.Views.Components;
+using System;
+using System.ComponentModel;
+using System.Linq;
 namespace OSTream.Views;
+
 public partial class MainWindow : Window
 {
-    MainViewModel? _vm;
-    bool _closingConfirmed;
-    System.IDisposable? _hideRail;
-    ScrollAnimation? _scroll;
+    private MainViewModel? _vm;
+    private bool _closingConfirmed;
+    private System.IDisposable? _hideRail;
+    private ScrollAnimation? _scroll;
     public MainWindow()
     {
         InitializeComponent();
@@ -27,7 +31,10 @@ public partial class MainWindow : Window
         Scrim.PointerPressed += (_, _) => _vm?.Rail.Toggle(false);
         ContentScroll.ScrollChanged += (_, e) =>
         {
-            if (e.OffsetDelta != default && _vm?.Menus.IsOpen == true && !Overlays.IsKeyboardFocusWithin) _vm.Menus.Close();
+            if (e.OffsetDelta != default && _vm?.Menus.IsOpen == true && !Overlays.IsKeyboardFocusWithin)
+            {
+                _vm.Menus.Close();
+            }
         };
         SizeChanged += (_, e) =>
         {
@@ -38,7 +45,11 @@ public partial class MainWindow : Window
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        if (DataContext is not MainViewModel vm) return;
+        if (DataContext is not MainViewModel vm)
+        {
+            return;
+        }
+
         _vm = vm;
         vm.ScrollRequested += OnScrollRequested;
         vm.Rail.PropertyChanged += OnRailChanged;
@@ -46,15 +57,19 @@ public partial class MainWindow : Window
         RestoreBounds(vm.App.Settings.Value.Window);
         ApplyBreakpoints(Width);
     }
-    void ApplyBreakpoints(double width)
+    private void ApplyBreakpoints(double width)
     {
-        if (_vm is null || double.IsNaN(width) || width <= 0) return;
-        var narrow = width <= 1280;
+        if (_vm is null || double.IsNaN(width) || width <= 0)
+        {
+            return;
+        }
+
+        bool narrow = width <= 1280;
         Root.Classes.Set("w1280", narrow);
         Root.Classes.Set("w1100", width <= 1100);
         Root.Classes.Set("compact", width <= 960);
         Root.Classes.Set("mobile", width <= 720);
-        foreach (var target in new StyledElement[] { Sidebar, PlayerBar, PageHost, TopBar })
+        foreach (StyledElement target in new StyledElement[] { Sidebar, PlayerBar, PageHost, TopBar })
         {
             target.Classes.Set("w1100", width <= 1100);
             target.Classes.Set("compact", width <= 960);
@@ -68,14 +83,21 @@ public partial class MainWindow : Window
         Rail.Width = width <= 720 ? Math.Min(width, 340) : 300;
         UpdateRail(animate: false);
     }
-    void OnRailChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnRailChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(RailViewModel.IsVisible) or nameof(RailViewModel.IsDrawerOpen) or nameof(RailViewModel.IsNarrow)) UpdateRail(animate: true);
+        if (e.PropertyName is nameof(RailViewModel.IsVisible) or nameof(RailViewModel.IsDrawerOpen) or nameof(RailViewModel.IsNarrow))
+        {
+            UpdateRail(animate: true);
+        }
     }
-    void UpdateRail(bool animate)
+    private void UpdateRail(bool animate)
     {
-        if (_vm is null) return;
-        var rail = _vm.Rail;
+        if (_vm is null)
+        {
+            return;
+        }
+
+        RailViewModel rail = _vm.Rail;
         Rail.Classes.Set("drawer", rail.IsNarrow);
         _hideRail?.Dispose();
         if (!rail.IsNarrow)
@@ -86,16 +108,16 @@ public partial class MainWindow : Window
             Scrim.Classes.Set("open", false);
             return;
         }
-        var open = rail.IsDrawerOpen;
+        bool open = rail.IsDrawerOpen;
         Scrim.Classes.Set("open", open);
-        var slide = TransformOperations.CreateBuilder(1);
+        TransformOperations.Builder slide = TransformOperations.CreateBuilder(1);
         slide.AppendTranslate(Rail.Width, 0);
-        var shift = slide.Build();
+        TransformOperations shift = slide.Build();
         if (open)
         {
             if (!Rail.IsVisible)
             {
-                var transitions = Rail.Transitions;
+                Transitions? transitions = Rail.Transitions;
                 Rail.Transitions = null;
                 Rail.RenderTransform = shift;
                 Rail.IsVisible = true;
@@ -114,21 +136,25 @@ public partial class MainWindow : Window
             Rail.IsVisible = false;
         }
     }
-    void OnScrollRequested(ScrollTarget target, bool instant)
+    private void OnScrollRequested(ScrollTarget target, bool instant)
     {
         Dispatcher.UIThread.Post(() =>
         {
             double y = 0;
             if (target == ScrollTarget.AlbumPanel)
             {
-                var panel = PageHost.GetVisualDescendants().OfType<AlbumPanelView>().FirstOrDefault(p => p.IsVisible);
-                if (panel?.TranslatePoint(new Point(0, 0), ContentScroll.Presenter ?? (Visual)ContentScroll) is not { } p) return;
+                AlbumPanelView? panel = PageHost.GetVisualDescendants().OfType<AlbumPanelView>().FirstOrDefault(p => p.IsVisible);
+                if (panel?.TranslatePoint(new Point(0, 0), ContentScroll.Presenter ?? (Visual)ContentScroll) is not { } p)
+                {
+                    return;
+                }
+
                 y = ContentScroll.Offset.Y + p.Y - 28;
             }
             ScrollTo(y, instant);
         }, DispatcherPriority.Loaded);
     }
-    void ScrollTo(double y, bool instant)
+    private void ScrollTo(double y, bool instant)
     {
         y = Math.Clamp(y, 0, Math.Max(0, ContentScroll.Extent.Height - ContentScroll.Viewport.Height));
         _scroll?.Cancel();
@@ -139,12 +165,12 @@ public partial class MainWindow : Window
         }
         _scroll = new ScrollAnimation(ContentScroll, y);
     }
-    sealed class ScrollAnimation
+    private sealed class ScrollAnimation
     {
-        readonly ScrollViewer _viewer;
-        readonly double _from, _to, _duration;
-        TimeSpan? _start;
-        bool _canceled;
+        private readonly ScrollViewer _viewer;
+        private readonly double _from, _to, _duration;
+        private TimeSpan? _start;
+        private bool _canceled;
         public ScrollAnimation(ScrollViewer viewer, double to)
         {
             _viewer = viewer;
@@ -153,21 +179,36 @@ public partial class MainWindow : Window
             _duration = Math.Clamp(Math.Abs(to - _from) / 4, 200, 450);
             TopLevel.GetTopLevel(viewer)?.RequestAnimationFrame(Frame);
         }
-        public void Cancel() => _canceled = true;
-        void Frame(TimeSpan now)
+        public void Cancel()
         {
-            if (_canceled) return;
+            _canceled = true;
+        }
+
+        private void Frame(TimeSpan now)
+        {
+            if (_canceled)
+            {
+                return;
+            }
+
             _start ??= now;
-            var t = Math.Min(1, (now - _start.Value).TotalMilliseconds / _duration);
-            var eased = t < 0.5 ? 4 * t * t * t : 1 - Math.Pow(-2 * t + 2, 3) / 2;
-            _viewer.Offset = new Vector(_viewer.Offset.X, _from + (_to - _from) * eased);
-            if (t < 1) TopLevel.GetTopLevel(_viewer)?.RequestAnimationFrame(Frame);
+            double t = Math.Min(1, (now - _start.Value).TotalMilliseconds / _duration);
+            double eased = t < 0.5 ? 4 * t * t * t : 1 - (Math.Pow((-2 * t) + 2, 3) / 2);
+            _viewer.Offset = new Vector(_viewer.Offset.X, _from + ((_to - _from) * eased));
+            if (t < 1)
+            {
+                TopLevel.GetTopLevel(_viewer)?.RequestAnimationFrame(Frame);
+            }
         }
     }
-    void OnPreviewPointer(object? sender, PointerPressedEventArgs e)
+    private void OnPreviewPointer(object? sender, PointerPressedEventArgs e)
     {
-        if (_vm is null) return;
-        var point = e.GetCurrentPoint(this).Properties;
+        if (_vm is null)
+        {
+            return;
+        }
+
+        PointerPointProperties point = e.GetCurrentPoint(this).Properties;
         if (point.IsXButton1Pressed)
         {
             _vm.App.Navigator.Back();
@@ -180,25 +221,45 @@ public partial class MainWindow : Window
             e.Handled = true;
             return;
         }
-        var source = e.Source as Visual;
+        Visual? source = e.Source as Visual;
         if (source?.GetSelfAndVisualAncestors().OfType<InputElement>().Any(el => el.Focusable && el.IsEffectivelyEnabled) != true)
-            FocusManager?.Focus(null!, NavigationMethod.Pointer);
-        if (_vm.Menus.IsOpen && !Overlays.IsInMenu(source) && !IsWithin(source, _vm.Menus.Anchor as Visual)) _vm.Menus.Close();
+        {
+            _ = (FocusManager?.Focus(null!, NavigationMethod.Pointer));
+        }
+
+        if (_vm.Menus.IsOpen && !Overlays.IsInMenu(source) && !IsWithin(source, _vm.Menus.Anchor as Visual))
+        {
+            _vm.Menus.Close();
+        }
+
         if (_vm.TopBar.IsSettingsOpen && !IsWithin(source, TopBar.FlyoutPanel) && !IsWithin(source, TopBar.SettingsAnchor))
+        {
             _vm.TopBar.IsSettingsOpen = false;
+        }
     }
-    static bool IsWithin(Visual? visual, Visual? container) =>
-        visual is not null && container is not null && (visual == container || container.IsVisualAncestorOf(visual));
-    void OnPreviewKey(object? sender, KeyEventArgs e)
+    private static bool IsWithin(Visual? visual, Visual? container)
     {
-        if (_vm is not { } vm) return;
-        var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        return visual is not null && container is not null && (visual == container || container.IsVisualAncestorOf(visual));
+    }
+
+    private void OnPreviewKey(object? sender, KeyEventArgs e)
+    {
+        if (_vm is not { } vm)
+        {
+            return;
+        }
+
+        bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
         if (Overlays.HandleDialogKey(e) || Overlays.HandleLightboxKey(e) || Overlays.HandleMenuKey(e))
         {
             e.Handled = true;
             return;
         }
-        if (vm.App.Dialogs.Current is not null || vm.App.Lightbox.Current is not null) return;
+        if (vm.App.Dialogs.Current is not null || vm.App.Lightbox.Current is not null)
+        {
+            return;
+        }
+
         if (ctrl && e.Key == Key.K)
         {
             vm.TopBar.FocusSearch();
@@ -207,18 +268,33 @@ public partial class MainWindow : Window
         }
         if (e.KeyModifiers.HasFlag(KeyModifiers.Alt) && e.Key is Key.Left or Key.Right)
         {
-            if (e.Key == Key.Left) vm.App.Navigator.Back();
-            else vm.App.Navigator.Forward();
+            if (e.Key == Key.Left)
+            {
+                vm.App.Navigator.Back();
+            }
+            else
+            {
+                vm.App.Navigator.Forward();
+            }
+
             e.Handled = true;
             return;
         }
-        if (ctrl || e.KeyModifiers.HasFlag(KeyModifiers.Alt)) return;
-        var focused = FocusManager?.GetFocusedElement() as Visual;
-        if (focused is TextBox || focused?.FindAncestorOfType<TextBox>() is not null) return;
-        var onControl = focused is Button or SliderBar;
-        var ownsArrows = focused is SliderBar || focused is Button b && (b.Classes.Contains("seg") || b.Classes.Contains("theme-option"));
-        var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
-        var player = vm.App.Player;
+        if (ctrl || e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+        {
+            return;
+        }
+
+        Visual? focused = FocusManager?.GetFocusedElement() as Visual;
+        if (focused is TextBox || focused?.FindAncestorOfType<TextBox>() is not null)
+        {
+            return;
+        }
+
+        bool onControl = focused is Button or SliderBar;
+        bool ownsArrows = focused is SliderBar || (focused is Button b && (b.Classes.Contains("seg") || b.Classes.Contains("theme-option")));
+        bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        PlayerService player = vm.App.Player;
         if (e.KeySymbol == "/")
         {
             vm.TopBar.FocusSearch();
@@ -228,15 +304,29 @@ public partial class MainWindow : Window
         switch (e.Key)
         {
             case Key.Space:
-                if (onControl) return;
+                if (onControl)
+                {
+                    return;
+                }
+
                 player.Toggle();
                 break;
             case Key.Left or Key.Right:
-                if (ownsArrows) return;
+                if (ownsArrows)
+                {
+                    return;
+                }
+
                 if (shift)
                 {
-                    if (e.Key == Key.Left) player.Prev();
-                    else player.Next();
+                    if (e.Key == Key.Left)
+                    {
+                        player.Prev();
+                    }
+                    else
+                    {
+                        player.Next();
+                    }
                 }
                 else
                 {
@@ -275,36 +365,51 @@ public partial class MainWindow : Window
         }
         e.Handled = true;
     }
-    void RestoreBounds(WindowBounds? bounds)
+    private void RestoreBounds(WindowBounds? bounds)
     {
-        if (bounds is not { Width: > 0, Height: > 0 } b) return;
+        if (bounds is not { Width: > 0, Height: > 0 } b)
+        {
+            return;
+        }
+
         Width = Math.Max(MinWidth, b.Width);
         Height = Math.Max(MinHeight, b.Height);
-        var onScreen = Screens.All.Any(s => s.WorkingArea.Contains(new PixelPoint(b.X + 40, b.Y + 20)));
+        bool onScreen = Screens.All.Any(s => s.WorkingArea.Contains(new PixelPoint(b.X + 40, b.Y + 20)));
         if (onScreen)
         {
             WindowStartupLocation = WindowStartupLocation.Manual;
             Position = new PixelPoint(b.X, b.Y);
         }
-        if (b.Maximized) WindowState = WindowState.Maximized;
+        if (b.Maximized)
+        {
+            WindowState = WindowState.Maximized;
+        }
     }
     protected override async void OnClosing(WindowClosingEventArgs e)
     {
         base.OnClosing(e);
-        if (_vm is not { } vm) return;
+        if (_vm is not { } vm)
+        {
+            return;
+        }
+
         if (!_closingConfirmed && vm.App.Manager.HasActive)
         {
             e.Cancel = true;
-            var quit = await vm.App.Dialogs.ConfirmAsync("Quit while downloading?",
+            bool quit = await vm.App.Dialogs.ConfirmAsync("Quit while downloading?",
                 "Downloads in progress stop when OSTream closes. Files that finished are kept; retry the rest later.", "Quit", danger: true);
-            if (!quit) return;
+            if (!quit)
+            {
+                return;
+            }
+
             _closingConfirmed = true;
             Close();
             return;
         }
-        var maximized = WindowState == WindowState.Maximized;
-        var saved = vm.App.Settings.Value.Window;
-        var bounds = maximized && saved is not null
+        bool maximized = WindowState == WindowState.Maximized;
+        WindowBounds? saved = vm.App.Settings.Value.Window;
+        WindowBounds bounds = maximized && saved is not null
             ? saved with { Maximized = true }
             : new WindowBounds(Position.X, Position.Y, (int)Width, (int)Height, maximized);
         vm.App.Settings.Update(s => s with { Window = bounds });

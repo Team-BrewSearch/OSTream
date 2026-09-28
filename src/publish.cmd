@@ -22,8 +22,8 @@ if errorlevel 1 (
     echo [ERROR] Release build failed. Nothing was published.
     goto :Finish
 )
-call :Publish "win-x86"     "false"
-call :Publish "win-x64"     "false"
+call :Publish "win-x86"     "true"
+call :Publish "win-x64"     "true"
 call :Publish "linux-x64"   "true"
 call :Publish "linux-arm64" "true"
 :Finish
@@ -57,14 +57,13 @@ echo.
   echo ============================================
   echo   Publishing %RUNTIME%  (self-contained: %SELF_CONTAINED%)
   echo ============================================
+  set "PROPS=-p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false"
+  if "%SELF_CONTAINED%"=="true" (
+    set "PROPS=!PROPS! -p:PublishTrimmed=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true"
+  )
   dotnet publish "%PROJECT%" -c Release -r %RUNTIME% ^
     --self-contained %SELF_CONTAINED% ^
-    -p:PublishSingleFile=true ^
-    -p:EnableCompressionInSingleFile=true ^
-    -p:PublishTrimmed=true ^
-    -p:DebugType=none ^
-    -p:DebugSymbols=false ^
-    -p:IncludeNativeLibrariesForSelfExtract=true ^
+    !PROPS! ^
     -o "%OUTPUT%" ^
     --nologo ^
     --verbosity minimal

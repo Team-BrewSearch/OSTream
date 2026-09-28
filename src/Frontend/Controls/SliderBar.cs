@@ -1,11 +1,13 @@
-using System;
-using System.Globalization;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
-namespace OSTream.Controls;
+using System;
+using System.Globalization;
+
+namespace OSTream.Frontend.Controls;
+
 public sealed class SliderBar : Control
 {
     public static readonly StyledProperty<double> ValueProperty = AvaloniaProperty.Register<SliderBar, double>(nameof(Value));
@@ -21,9 +23,8 @@ public sealed class SliderBar : Control
     public static readonly StyledProperty<BoxShadows> TipShadowProperty = AvaloniaProperty.Register<SliderBar, BoxShadows>(nameof(TipShadow));
     public static readonly StyledProperty<double> ThumbScaleProperty = AvaloniaProperty.Register<SliderBar, double>(nameof(ThumbScale));
     public static readonly StyledProperty<double> StepProperty = AvaloniaProperty.Register<SliderBar, double>(nameof(Step), 0.05);
-    double _hover = -1;
-    bool _dragging;
-    double _dragValue;
+    private double _hover = -1;
+    private double _dragValue;
     static SliderBar()
     {
         FocusableProperty.OverrideDefaultValue<SliderBar>(true);
@@ -49,18 +50,30 @@ public sealed class SliderBar : Control
     public double ThumbScale { get => GetValue(ThumbScaleProperty); set => SetValue(ThumbScaleProperty, value); }
     public double Step { get => GetValue(StepProperty); set => SetValue(StepProperty, value); }
     public Func<double, string>? TipText { get; set; }
-    public bool IsDragging => _dragging;
+    public bool IsDragging { get; private set; }
     public event Action<double>? Input;
     public event Action<double>? Commit;
-    double Shown => _dragging ? _dragValue : Math.Clamp(Value, 0, 1);
-    double RatioAt(Point p) => Bounds.Width > 0 ? Math.Clamp(p.X / Bounds.Width, 0, 1) : 0;
-    void UpdateThumb() => ThumbScale = IsEffectivelyEnabled && (_dragging || IsPointerOver || IsFocused && IsKeyboardFocusWithin) ? 1 : 0;
+    private double Shown => IsDragging ? _dragValue : Math.Clamp(Value, 0, 1);
+    private double RatioAt(Point p)
+    {
+        return Bounds.Width > 0 ? Math.Clamp(p.X / Bounds.Width, 0, 1) : 0;
+    }
+
+    private void UpdateThumb()
+    {
+        ThumbScale = IsEffectivelyEnabled && (IsDragging || IsPointerOver || (IsFocused && IsKeyboardFocusWithin)) ? 1 : 0;
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
         if (change.Property == IsPointerOverProperty || change.Property == IsEffectivelyEnabledProperty || change.Property == IsFocusedProperty)
         {
-            if (!IsPointerOver && !_dragging) _hover = -1;
+            if (!IsPointerOver && !IsDragging)
+            {
+                _hover = -1;
+            }
+
             Cursor = new Cursor(IsEffectivelyEnabled ? StandardCursorType.Hand : StandardCursorType.Arrow);
             UpdateThumb();
             InvalidateVisual();
@@ -69,9 +82,13 @@ public sealed class SliderBar : Control
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
-        if (!IsEffectivelyEnabled || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        if (!IsEffectivelyEnabled || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
         e.Handled = true;
-        _dragging = true;
+        IsDragging = true;
         e.Pointer.Capture(this);
         _dragValue = _hover = RatioAt(e.GetPosition(this));
         UpdateThumb();
@@ -81,9 +98,13 @@ public sealed class SliderBar : Control
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
-        if (!IsEffectivelyEnabled) return;
+        if (!IsEffectivelyEnabled)
+        {
+            return;
+        }
+
         _hover = RatioAt(e.GetPosition(this));
-        if (_dragging)
+        if (IsDragging)
         {
             _dragValue = _hover;
             Input?.Invoke(_dragValue);
@@ -93,9 +114,13 @@ public sealed class SliderBar : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
-        if (!_dragging) return;
-        _dragging = false;
-        var value = RatioAt(e.GetPosition(this));
+        if (!IsDragging)
+        {
+            return;
+        }
+
+        IsDragging = false;
+        double value = RatioAt(e.GetPosition(this));
         e.Pointer.Capture(null);
         SetCurrentValue(ValueProperty, value);
         UpdateThumb();
@@ -104,8 +129,12 @@ public sealed class SliderBar : Control
     protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
     {
         base.OnPointerCaptureLost(e);
-        if (!_dragging) return;
-        _dragging = false; 
+        if (!IsDragging)
+        {
+            return;
+        }
+
+        IsDragging = false;
         _hover = -1;
         UpdateThumb();
         InvalidateVisual();
@@ -113,14 +142,22 @@ public sealed class SliderBar : Control
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
-        if (_dragging) return;
+        if (IsDragging)
+        {
+            return;
+        }
+
         _hover = -1;
         InvalidateVisual();
     }
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (!IsEffectivelyEnabled) return;
+        if (!IsEffectivelyEnabled)
+        {
+            return;
+        }
+
         double? next = e.Key switch
         {
             Key.Right or Key.Up => Value + Step,
@@ -131,7 +168,11 @@ public sealed class SliderBar : Control
             Key.End => 1,
             _ => null,
         };
-        if (next is not { } v) return;
+        if (next is not { } v)
+        {
+            return;
+        }
+
         e.Handled = true;
         v = Math.Clamp(v, 0, 1);
         SetCurrentValue(ValueProperty, v);
@@ -139,26 +180,34 @@ public sealed class SliderBar : Control
     }
     public override void Render(DrawingContext context)
     {
-        var w = Bounds.Width;
-        var h = TrackHeight;
-        var y = (Bounds.Height - h) / 2;
-        var radius = h / 2 + 0.5;
+        double w = Bounds.Width;
+        double h = TrackHeight;
+        double y = (Bounds.Height - h) / 2;
+        double radius = (h / 2) + 0.5;
         context.DrawRectangle(TrackBrush, null, new RoundedRect(new Rect(0, y, w, h), radius));
-        var buffered = Math.Clamp(Buffered, 0, 1) * w;
-        if (buffered > 0 && BufferedBrush is not null) context.DrawRectangle(BufferedBrush, null, new RoundedRect(new Rect(0, y, buffered, h), radius));
-        var fill = Shown * w;
-        if (fill > 0) context.DrawRectangle(FillBrush, null, new RoundedRect(new Rect(0, y, fill, h), radius), FillShadow);
+        double buffered = Math.Clamp(Buffered, 0, 1) * w;
+        if (buffered > 0 && BufferedBrush is not null)
+        {
+            context.DrawRectangle(BufferedBrush, null, new RoundedRect(new Rect(0, y, buffered, h), radius));
+        }
+
+        double fill = Shown * w;
+        if (fill > 0)
+        {
+            context.DrawRectangle(FillBrush, null, new RoundedRect(new Rect(0, y, fill, h), radius), FillShadow);
+        }
+
         if (ThumbScale > 0.01 && IsEffectivelyEnabled)
         {
-            var r = 6 * ThumbScale;
-            var center = new Point(fill, Bounds.Height / 2);
+            double r = 6 * ThumbScale;
+            Point center = new(fill, Bounds.Height / 2);
             context.DrawRectangle(Brushes.White, null, new RoundedRect(new Rect(center.X - r, center.Y - r, 2 * r, 2 * r), r), ThumbShadow);
         }
         if (TipText is { } tip && _hover >= 0 && IsEffectivelyEnabled)
         {
-            var text = new FormattedText(tip(_hover), CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+            FormattedText text = new(tip(_hover), CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
                 new Typeface((Application.Current?.FindResource("MonoFont") as FontFamily) ?? FontFamily.Default), 10.5, TipForeground);
-            var box = new Rect(_hover * w - (text.Width + 12) / 2, Bounds.Height - 18 - (text.Height + 6), text.Width + 12, text.Height + 6);
+            Rect box = new((_hover * w) - ((text.Width + 12) / 2), Bounds.Height - 18 - (text.Height + 6), text.Width + 12, text.Height + 6);
             context.DrawRectangle(TipBackground, null, new RoundedRect(box, 5), TipShadow);
             context.DrawText(text, new Point(box.X + 6, box.Y + 3));
         }

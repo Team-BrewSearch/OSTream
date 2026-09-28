@@ -1,13 +1,15 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using OSTream.Frontend.Controls;
 using OSTream.ViewModels;
 namespace OSTream.Views.Shell;
+
 public partial class PlayerBarView : UserControl
 {
     public PlayerBarView()
     {
         InitializeComponent();
-        foreach (var seek in new[] { Seek, MiniSeek })
+        foreach (SliderBar? seek in new[] { Seek, MiniSeek })
         {
             seek.TipText = ratio => Vm?.TimeAt(ratio) ?? "";
             seek.Input += ratio => Vm?.SeekInput(ratio);
@@ -18,11 +20,14 @@ public partial class PlayerBarView : UserControl
         Volume.PointerWheelChanged += OnVolumeWheel;
         VolumeSlider.PropertyChanged += (_, e) =>
         {
-            if (e.Property == IsPointerOverProperty) VolumeSlider.Classes.Set("dragging", VolumeSlider.IsDragging);
+            if (e.Property == IsPointerOverProperty)
+            {
+                VolumeSlider.Classes.Set("dragging", VolumeSlider.IsDragging);
+            }
         };
     }
-    PlayerBarViewModel? Vm => DataContext as PlayerBarViewModel;
-    void OnVolumeWheel(object? sender, PointerWheelEventArgs e)
+    private PlayerBarViewModel? Vm => DataContext as PlayerBarViewModel;
+    private void OnVolumeWheel(object? sender, PointerWheelEventArgs e)
     {
         e.Handled = true;
         Vm?.NudgeVolume(e.Delta.Y > 0 ? 0.05 : -0.05);

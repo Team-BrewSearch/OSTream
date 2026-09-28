@@ -1,15 +1,18 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OSTream.Core;
 using OSTream.Core.Models;
+using OSTream.Frontend;
+using OSTream.Frontend.ViewModels;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 namespace OSTream.ViewModels;
+
 public sealed partial class AlbumCardViewModel : ViewModelBase
 {
-    readonly AppServices _app;
+    private readonly AppServices _app;
     public AlbumCardViewModel(AppServices app, AlbumSummary album, string href, int index, bool ranked, bool selected)
     {
         _app = app;
@@ -32,11 +35,19 @@ public sealed partial class AlbumCardViewModel : ViewModelBase
     [ObservableProperty] public partial bool IsSelected { get; set; }
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [RelayCommand]
-    void Open() => _app.Navigator.Open(Href);
-    [RelayCommand]
-    async Task Play()
+    private void Open()
     {
-        if (IsBusy) return;
+        _app.Navigator.Open(Href);
+    }
+
+    [RelayCommand]
+    private async Task Play()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
         IsBusy = true;
         try
         {
@@ -47,8 +58,10 @@ public sealed partial class AlbumCardViewModel : ViewModelBase
             IsBusy = false;
         }
     }
-    public static List<AlbumCardViewModel> Build(AppServices app, IEnumerable<AlbumSummary> albums, Func<string, string> hrefFor, string? selected, bool ranked = false) =>
-        albums.Select((a, i) => new AlbumCardViewModel(app, a, hrefFor(a.Slug), i, ranked, a.Slug == selected)).ToList();
+    public static List<AlbumCardViewModel> Build(AppServices app, IEnumerable<AlbumSummary> albums, Func<string, string> hrefFor, string? selected, bool ranked = false)
+    {
+        return albums.Select((a, i) => new AlbumCardViewModel(app, a, hrefFor(a.Slug), i, ranked, a.Slug == selected)).ToList();
+    }
 }
 public sealed partial class PlaylistCardViewModel(AppServices app, Playlist playlist, int index) : ViewModelBase
 {
@@ -59,8 +72,17 @@ public sealed partial class PlaylistCardViewModel(AppServices app, Playlist play
     public MosaicViewModel Mosaic { get; } = new(playlist.Tracks, playlist.Id);
     public bool HasTracks => playlist.Tracks.Count > 0;
     public int EntranceDelay { get; } = Math.Min(index, 14) * 16;
-    [RelayCommand] void Open() => app.Navigator.Navigate($"/playlists/{playlist.Id}");
-    [RelayCommand] void Play() => app.Player.PlayList(playlist.Tracks);
+    [RelayCommand]
+    private void Open()
+    {
+        app.Navigator.Navigate($"/playlists/{playlist.Id}");
+    }
+
+    [RelayCommand]
+    private void Play()
+    {
+        app.Player.PlayList(playlist.Tracks);
+    }
 }
 public sealed class MosaicViewModel(IReadOnlyList<Track> tracks, string seed)
 {

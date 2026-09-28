@@ -1,15 +1,18 @@
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using OSTream.Core;
+using OSTream.Core.Downloads;
+using OSTream.Core.Models;
+using OSTream.Frontend;
+using OSTream.Frontend.Controls;
+using OSTream.Frontend.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Avalonia.Threading;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using OSTream.Controls;
-using OSTream.Core;
-using OSTream.Core.Downloads;
-using OSTream.Core.Models;
 namespace OSTream.ViewModels;
+
 public sealed record JobTrackLine(string Name, string? Error, string Value, string State, IconKind Icon, bool Busy)
 {
     public bool HasIcon => Icon != IconKind.None;
@@ -17,8 +20,8 @@ public sealed record JobTrackLine(string Name, string? Error, string Value, stri
 }
 public sealed partial class JobCardViewModel : ViewModelBase
 {
-    readonly AppServices _app;
-    JobSnapshot? _last;
+    private readonly AppServices _app;
+    private JobSnapshot? _last;
     public JobCardViewModel(AppServices app, JobSnapshot job, bool detailed)
     {
         _app = app;
@@ -58,9 +61,12 @@ public sealed partial class JobCardViewModel : ViewModelBase
     }
     public void Update(JobSnapshot job)
     {
-        if (!ReferenceEquals(job, _last)) Render(job);
+        if (!ReferenceEquals(job, _last))
+        {
+            Render(job);
+        }
     }
-    void Render(JobSnapshot job)
+    private void Render(JobSnapshot job)
     {
         _last = job;
         Status = job.Status;
@@ -75,17 +81,23 @@ public sealed partial class JobCardViewModel : ViewModelBase
         DetailsLabel = IsExpanded ? "Hide tracks" : $"Show {Formatting.Plural(job.Counts.Total, "track")}";
         if (Detailed && IsExpanded)
         {
-            var lines = job.Tracks.Select(Line).ToArray();
-            if (!lines.SequenceEqual(TrackLines)) TrackLines = lines;
+            JobTrackLine[] lines = job.Tracks.Select(Line).ToArray();
+            if (!lines.SequenceEqual(TrackLines))
+            {
+                TrackLines = lines;
+            }
         }
     }
     partial void OnIsExpandedChanged(bool value)
     {
-        if (_last is not null) Render(_last);
+        if (_last is not null)
+        {
+            Render(_last);
+        }
     }
-    static string StatusOf(JobSnapshot job)
+    private static string StatusOf(JobSnapshot job)
     {
-        var c = job.Counts;
+        JobCounts c = job.Counts;
         return job.Status switch
         {
             JobStatus.Queued => "Queued",
@@ -97,20 +109,20 @@ public sealed partial class JobCardViewModel : ViewModelBase
             _ => job.Error ?? "Failed",
         };
     }
-    string SideOf(JobSnapshot job)
+    private string SideOf(JobSnapshot job)
     {
         if (job.Status == JobStatus.Running)
         {
-            var eta = Formatting.Eta(job.Eta);
-            var speed = job.Speed > 0 ? $"{Formatting.Bytes(job.Speed)}/s" : "";
+            string eta = Formatting.Eta(job.Eta);
+            string speed = job.Speed > 0 ? $"{Formatting.Bytes(job.Speed)}/s" : "";
             return Detailed ? Formatting.JoinNonEmpty(" · ", speed, eta) : eta.Length > 0 ? eta : speed;
         }
         return job.Status == JobStatus.Queued ? "—" : job.Format.Label();
     }
-    static JobTrackLine Line(TrackSnapshot t)
+    private static JobTrackLine Line(TrackSnapshot t)
     {
-        var name = (t.Number.Length > 0 ? $"{(t.Cd.Length > 0 ? $"{t.Cd}-" : "")}{t.Number}. " : "") + t.Title;
-        var value = t.Status switch
+        string name = (t.Number.Length > 0 ? $"{(t.Cd.Length > 0 ? $"{t.Cd}-" : "")}{t.Number}. " : "") + t.Title;
+        string value = t.Status switch
         {
             TrackStatus.Downloading => t.Total > 0 ? $"{Formatting.JsRound(t.Bytes * 100.0 / t.Total)}%" : Formatting.Bytes(t.Bytes),
             TrackStatus.Done => Formatting.Bytes(t.Total) + (t.Fallback is { } fallback ? $" · {fallback.ToUpperInvariant()}" : ""),
@@ -119,7 +131,7 @@ public sealed partial class JobCardViewModel : ViewModelBase
             TrackStatus.Canceled => "canceled",
             _ => "",
         };
-        var (state, icon) = t.Status switch
+        (string? state, IconKind icon) = t.Status switch
         {
             TrackStatus.Done or TrackStatus.Skipped => ("done", IconKind.Check),
             TrackStatus.Error => ("error", IconKind.Alert),
@@ -129,30 +141,70 @@ public sealed partial class JobCardViewModel : ViewModelBase
         };
         return new JobTrackLine(name, t.Error, value, state, icon, t.Status is TrackStatus.Downloading or TrackStatus.Resolving);
     }
-    [RelayCommand] void Cancel() => _app.Downloads.Cancel(Id);
-    [RelayCommand] void Retry() => _app.Downloads.Retry(Id);
-    [RelayCommand] void OpenFolder() => _ = _app.OpenJobFolder(Id);
-    [RelayCommand] void ToggleDetails() => IsExpanded = !IsExpanded;
     [RelayCommand]
-    void Remove()
+    private void Cancel()
     {
-        IsRemoving = true; 
-        DispatcherTimer.RunOnce(() => _app.Downloads.Remove(Id), TimeSpan.FromMilliseconds(180));
+        _app.Downloads.Cancel(Id);
+    }
+
+    [RelayCommand]
+    private void Retry()
+    {
+        _app.Downloads.Retry(Id);
+    }
+
+    [RelayCommand]
+    private void OpenFolder()
+    {
+        _ = _app.OpenJobFolder(Id);
+    }
+
+    [RelayCommand]
+    private void ToggleDetails()
+    {
+        IsExpanded = !IsExpanded;
+    }
+
+    [RelayCommand]
+    private void Remove()
+    {
+        IsRemoving = true;
+        _ = DispatcherTimer.RunOnce(() => _app.Downloads.Remove(Id), TimeSpan.FromMilliseconds(180));
     }
     public static void Sync(AppServices app, ObservableCollection<JobCardViewModel> cards, IReadOnlyList<JobSnapshot> jobs, bool detailed)
     {
-        var existing = cards.ToDictionary(c => c.Id);
-        for (var i = 0; i < jobs.Count; i++)
+        Dictionary<string, JobCardViewModel> existing = cards.ToDictionary(c => c.Id);
+        for (int i = 0; i < jobs.Count; i++)
         {
-            var job = jobs[i];
-            if (existing.Remove(job.Id, out var card)) card.Update(job);
-            else card = new JobCardViewModel(app, job, detailed);
-            var at = cards.IndexOf(card);
-            if (at == i) continue;
-            if (at >= 0) cards.Move(at, i);
-            else cards.Insert(i, card);
+            JobSnapshot job = jobs[i];
+            if (existing.Remove(job.Id, out JobCardViewModel? card))
+            {
+                card.Update(job);
+            }
+            else
+            {
+                card = new JobCardViewModel(app, job, detailed);
+            }
+
+            int at = cards.IndexOf(card);
+            if (at == i)
+            {
+                continue;
+            }
+
+            if (at >= 0)
+            {
+                cards.Move(at, i);
+            }
+            else
+            {
+                cards.Insert(i, card);
+            }
         }
-        foreach (var gone in existing.Values) cards.Remove(gone);
+        foreach (JobCardViewModel? gone in existing.Values)
+        {
+            _ = cards.Remove(gone);
+        }
     }
 }
 public sealed partial class UpNextItemViewModel(AppServices app, int queueIndex, Track track, bool isCurrent) : ViewModelBase
@@ -164,9 +216,16 @@ public sealed partial class UpNextItemViewModel(AppServices app, int queueIndex,
     public string Seed => track.Album.Slug.Length > 0 ? track.Album.Slug : track.Title;
     public bool IsCurrent { get; } = isCurrent;
     [RelayCommand]
-    void Jump()
+    private void Jump()
     {
-        if (!IsCurrent) app.Player.JumpTo(QueueIndex);
+        if (!IsCurrent)
+        {
+            app.Player.JumpTo(QueueIndex);
+        }
     }
-    [RelayCommand] void Remove() => app.Player.RemoveFromQueue(QueueIndex);
+    [RelayCommand]
+    private void Remove()
+    {
+        app.Player.RemoveFromQueue(QueueIndex);
+    }
 }

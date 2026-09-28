@@ -1,7 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using OSTream.Controls;
-namespace OSTream.ViewModels;
+using OSTream.Frontend.Controls;
+namespace OSTream.Frontend.ViewModels;
+
 public sealed partial class NavItemViewModel(string id, string path, string label, IconKind icon, IRelayCommand<string> go) : ViewModelBase
 {
     public string Id { get; } = id;

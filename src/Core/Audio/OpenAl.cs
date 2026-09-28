@@ -2,9 +2,10 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 namespace OSTream.Core.Audio;
+
 internal static partial class OpenAl
 {
-    const string Lib = "openal";
+    private const string Lib = "openal";
     public const int AL_SOURCE_RELATIVE = 0x202;
     public const int AL_GAIN = 0x100A;
     public const int AL_SOURCE_STATE = 0x1010;
@@ -17,15 +18,29 @@ internal static partial class OpenAl
     public const int AL_FORMAT_MONO_FLOAT32 = 0x10010;
     public const int AL_FORMAT_STEREO_FLOAT32 = 0x10011;
     public const int ALC_CONNECTED = 0x313;
-    static OpenAl() => NativeLibrary.SetDllImportResolver(typeof(OpenAl).Assembly, Resolve);
-    static IntPtr Resolve(string name, Assembly assembly, DllImportSearchPath? path)
+    static OpenAl()
     {
-        if (name != Lib) return IntPtr.Zero;
+        NativeLibrary.SetDllImportResolver(typeof(OpenAl).Assembly, Resolve);
+    }
+
+    private static IntPtr Resolve(string name, Assembly assembly, DllImportSearchPath? path)
+    {
+        if (name != Lib)
+        {
+            return IntPtr.Zero;
+        }
+
         string[] candidates = OperatingSystem.IsWindows() ? ["soft_oal.dll", "OpenAL32.dll"]
             : OperatingSystem.IsMacOS() ? ["libopenal.dylib", "libopenal.1.dylib"]
             : ["libopenal.so", "libopenal.so.1"];
-        foreach (var candidate in candidates)
-            if (NativeLibrary.TryLoad(candidate, assembly, path, out var handle)) return handle;
+        foreach (string candidate in candidates)
+        {
+            if (NativeLibrary.TryLoad(candidate, assembly, path, out nint handle))
+            {
+                return handle;
+            }
+        }
+
         return IntPtr.Zero;
     }
     [DllImport(Lib, EntryPoint = "alcOpenDevice", CharSet = CharSet.Ansi)]
@@ -86,19 +101,35 @@ internal static partial class OpenAl
     private static ReopenDeviceDelegate? _reopen;
     public static bool ReopenDeviceIfNeeded(IntPtr device)
     {
-        if (!HasAlcExtension(device, "ALC_SOFT_reopen_device")) return false;
+        if (!HasAlcExtension(device, "ALC_SOFT_reopen_device"))
+        {
+            return false;
+        }
+
         if (_reopen == null)
         {
-            var ptr = AlcProc(device, "alcReopenDeviceSOFT");
-            if (ptr == IntPtr.Zero) return false;
+            nint ptr = AlcProc(device, "alcReopenDeviceSOFT");
+            if (ptr == IntPtr.Zero)
+            {
+                return false;
+            }
+
             _reopen = (ReopenDeviceDelegate)Marshal.GetDelegateForFunctionPointer(ptr, typeof(ReopenDeviceDelegate));
         }
         return _reopen(device, IntPtr.Zero, IntPtr.Zero) != IntPtr.Zero;
     }
     public static bool HasAlcExtension(IntPtr device, string name)
-        => alcIsExtensionPresent(device, name) != 0;
+    {
+        return alcIsExtensionPresent(device, name) != 0;
+    }
+
     public static bool HasAlExtension(string name)
-        => alIsExtensionPresent(name) != 0;
+    {
+        return alIsExtensionPresent(name) != 0;
+    }
+
     public static IntPtr AlcProc(IntPtr device, string name)
-        => alcGetProcAddress(device, name);
+    {
+        return alcGetProcAddress(device, name);
+    }
 }

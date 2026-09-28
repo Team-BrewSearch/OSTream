@@ -18,14 +18,13 @@ publish() {
     echo "============================================"
     echo "   Publishing $RUNTIME  (self-contained: $SELF_CONTAINED)"
     echo "============================================"
+    local PROPS=(-p:PublishSingleFile=true -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false)
+    if [ "$SELF_CONTAINED" = "true" ]; then
+        PROPS+=(-p:PublishTrimmed=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true)
+    fi
     dotnet publish "$PROJECT" -c Release -r "$RUNTIME" \
         --self-contained "$SELF_CONTAINED" \
-        -p:PublishSingleFile=true \
-        -p:EnableCompressionInSingleFile=true \
-        -p:PublishTrimmed=true \
-        -p:DebugType=none \
-        -p:DebugSymbols=false \
-        -p:IncludeNativeLibrariesForSelfExtract=true \
+        "${PROPS[@]}" \
         -o "$OUTPUT" \
         --nologo \
         --verbosity minimal
@@ -48,8 +47,8 @@ if [ $? -ne 0 ]; then
     echo "[ERROR] Release build failed. Nothing was published."
     ((ERROR_COUNT++))
 else
-    publish "win-x86"     "false"
-    publish "win-x64"     "false"
+    publish "win-x86"     "true"
+    publish "win-x64"     "true"
     publish "linux-x64"   "true"
     publish "linux-arm64" "true"
 fi

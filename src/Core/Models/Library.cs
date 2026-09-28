@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 namespace OSTream.Core.Models;
+
 public sealed record Playlist
 {
     public string Id { get; init; } = "";

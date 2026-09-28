@@ -1,4 +1,3 @@
-using System;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
@@ -7,9 +6,12 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.VisualTree;
 using OSTream.Core;
-using OSTream.Services;
+using OSTream.Frontend.Services;
+using System;
 using System.Threading.Tasks;
-namespace OSTream.Controls;
+
+namespace OSTream.Frontend.Controls;
+
 public class ArtView : Border
 {
     public static readonly StyledProperty<string?> SourceProperty = AvaloniaProperty.Register<ArtView, string?>(nameof(Source));
@@ -17,11 +19,11 @@ public class ArtView : Border
     public static readonly StyledProperty<double> GlyphSizeProperty = AvaloniaProperty.Register<ArtView, double>(nameof(GlyphSize), 22);
     public static readonly StyledProperty<bool> SharpenProperty = AvaloniaProperty.Register<ArtView, bool>(nameof(Sharpen));
     public static ImageLoader? Loader { get; set; }
-    readonly Image _image = new() { Stretch = Stretch.UniformToFill, Opacity = 0, IsHitTestVisible = false };
-    readonly Icon _glyph = new() { Kind = IconKind.Music, StrokeWidth = 1.8, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
-    int _request;
-    string? _shown;
-    int _decodedWidth;
+    private readonly Image _image = new() { Stretch = Stretch.UniformToFill, Opacity = 0, IsHitTestVisible = false };
+    private readonly Icon _glyph = new() { Kind = IconKind.Music, StrokeWidth = 1.8, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
+    private int _request;
+    private string? _shown;
+    private int _decodedWidth;
     public ArtView()
     {
         ClipToBounds = true;
@@ -37,10 +39,22 @@ public class ArtView : Border
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == SeedProperty) UpdateBackground();
-        else if (change.Property == GlyphSizeProperty) _glyph.Size = GlyphSize;
-        else if (change.Property == SourceProperty || change.Property == SharpenProperty) _ = Reload();
-        else if (change.Property == BoundsProperty && !string.IsNullOrEmpty(Source) && (_shown is null || DecodeWidth > _decodedWidth * 1.25)) _ = Reload();
+        if (change.Property == SeedProperty)
+        {
+            UpdateBackground();
+        }
+        else if (change.Property == GlyphSizeProperty)
+        {
+            _glyph.Size = GlyphSize;
+        }
+        else if (change.Property == SourceProperty || change.Property == SharpenProperty)
+        {
+            _ = Reload();
+        }
+        else if (change.Property == BoundsProperty && !string.IsNullOrEmpty(Source) && (_shown is null || DecodeWidth > _decodedWidth * 1.25))
+        {
+            _ = Reload();
+        }
     }
     protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
@@ -51,23 +65,31 @@ public class ArtView : Border
     protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        _request++; 
+        _request++;
     }
-    void UpdateBackground() => Background = Application.Current?.FindResource($"Art{Formatting.HashIndex(Seed ?? Source)}") as IBrush;
-    int DecodeWidth => (int)Math.Ceiling(Math.Max(Bounds.Width, 48) * (TopLevel.GetTopLevel(this)?.RenderScaling ?? 1));
-    async Task Reload()
+    private void UpdateBackground()
     {
-        var request = ++_request;
-        var source = Source;
+        Background = Application.Current?.FindResource($"Art{Formatting.HashIndex(Seed ?? Source)}") as IBrush;
+    }
+
+    private int DecodeWidth => (int)Math.Ceiling(Math.Max(Bounds.Width, 48) * (TopLevel.GetTopLevel(this)?.RenderScaling ?? 1));
+    private async Task Reload()
+    {
+        int request = ++_request;
+        string? source = Source;
         if (string.IsNullOrEmpty(source) || Loader is null)
         {
             Show(null, animate: false);
             _shown = null;
             return;
         }
-        if (Bounds.Width <= 0 || !this.IsAttachedToVisualTree()) return; 
-        var primary = Sharpen ? Formatting.LargerThumb(source) : source;
-        var width = DecodeWidth;
+        if (Bounds.Width <= 0 || !this.IsAttachedToVisualTree())
+        {
+            return;
+        }
+
+        string primary = Sharpen ? Formatting.LargerThumb(source) : source;
+        int width = DecodeWidth;
         _decodedWidth = width;
         if (Loader.Peek(primary, width) is { } cached)
         {
@@ -75,21 +97,33 @@ public class ArtView : Border
             Show(cached, animate: false);
             return;
         }
-        if (_shown != source) Show(null, animate: false); 
-        var bitmap = await Loader.LoadAsync(primary, width);
-        if (bitmap is null && primary != source) bitmap = await Loader.LoadAsync(source, width);
-        if (request != _request || (bitmap is null && _shown == source)) return;
-        var fresh = _shown != source;
+        if (_shown != source)
+        {
+            Show(null, animate: false);
+        }
+
+        Bitmap? bitmap = await Loader.LoadAsync(primary, width);
+        if (bitmap is null && primary != source)
+        {
+            bitmap = await Loader.LoadAsync(source, width);
+        }
+
+        if (request != _request || (bitmap is null && _shown == source))
+        {
+            return;
+        }
+
+        bool fresh = _shown != source;
         _shown = source;
         Show(bitmap, animate: fresh);
     }
-    void Show(Bitmap? bitmap, bool animate)
+    private void Show(Bitmap? bitmap, bool animate)
     {
         _image.Source = bitmap;
         _glyph.IsVisible = bitmap is null;
         if (!animate)
         {
-            var transitions = _image.Transitions;
+            Transitions? transitions = _image.Transitions;
             _image.Transitions = null;
             _image.Opacity = bitmap is null ? 0 : 1;
             _image.Transitions = transitions;

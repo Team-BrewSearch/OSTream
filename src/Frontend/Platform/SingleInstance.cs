@@ -5,13 +5,14 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-namespace OSTream.Platform;
+namespace OSTream.Frontend.Platform;
+
 public sealed class SingleInstance : IDisposable
 {
-    readonly FileStream _lock;
-    readonly string _pipe;
-    readonly CancellationTokenSource _stop = new();
-    SingleInstance(FileStream fileLock, string pipe)
+    private readonly FileStream _lock;
+    private readonly string _pipe;
+    private readonly CancellationTokenSource _stop = new();
+    private SingleInstance(FileStream fileLock, string pipe)
     {
         _lock = fileLock;
         _pipe = pipe;
@@ -19,10 +20,10 @@ public sealed class SingleInstance : IDisposable
     public static bool TryAcquire(string dataDir, out SingleInstance? instance)
     {
         instance = null;
-        var pipe = "ostream-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(dataDir))))[..16].ToLowerInvariant();
+        string pipe = "ostream-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(dataDir))))[..16].ToLowerInvariant();
         try
         {
-            Directory.CreateDirectory(dataDir);
+            _ = Directory.CreateDirectory(dataDir);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -44,11 +45,11 @@ public sealed class SingleInstance : IDisposable
             return false;
         }
     }
-    static void Signal(string pipe)
+    private static void Signal(string pipe)
     {
         try
         {
-            using var client = new NamedPipeClientStream(".", pipe, PipeDirection.Out);
+            using NamedPipeClientStream client = new(".", pipe, PipeDirection.Out);
             client.Connect(2000);
             client.WriteByte(1);
         }
@@ -56,13 +57,15 @@ public sealed class SingleInstance : IDisposable
         {
         }
     }
-    public void Listen(Action activate) => _ = Task.Run(async () =>
+    public void Listen(Action activate)
+    {
+        _ = Task.Run(async () =>
     {
         while (!_stop.IsCancellationRequested)
         {
             try
             {
-                await using var server = new NamedPipeServerStream(_pipe, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                await using NamedPipeServerStream server = new(_pipe, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
                 await server.WaitForConnectionAsync(_stop.Token).ConfigureAwait(false);
                 activate();
             }
@@ -83,6 +86,8 @@ public sealed class SingleInstance : IDisposable
             }
         }
     });
+    }
+
     public void Dispose()
     {
         _stop.Cancel();

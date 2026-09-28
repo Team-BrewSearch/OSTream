@@ -1,24 +1,27 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using OSTream.Core;
+using OSTream.Core.Khinsider;
+using OSTream.Core.Models;
+using OSTream.Frontend;
+using OSTream.Frontend.Controls;
+using OSTream.Frontend.Services;
+using OSTream.Frontend.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using OSTream.Controls;
-using OSTream.Core;
-using OSTream.Core.Khinsider;
-using OSTream.Core.Models;
-using OSTream.Services;
 using System.Threading.Tasks;
 namespace OSTream.ViewModels;
+
 public sealed record TagViewModel(string Text, string Kind = "", string? Tip = null);
 public sealed record TextPart(string Text, bool Bold = false, bool Separator = false);
 public sealed partial class AlbumPanelViewModel : ViewModelBase, IDisposable
 {
-    readonly AppServices _app;
-    readonly Func<string, string> _hrefFor;
-    readonly Action<ScrollTarget, bool> _scroll;
-    CancellationTokenSource? _load;
+    private readonly AppServices _app;
+    private readonly Func<string, string> _hrefFor;
+    private readonly Action<ScrollTarget, bool> _scroll;
+    private CancellationTokenSource? _load;
     public AlbumPanelViewModel(AppServices app, bool inline, Func<string, string> hrefFor, Action<ScrollTarget, bool> scroll)
     {
         _app = app;
@@ -57,12 +60,24 @@ public sealed partial class AlbumPanelViewModel : ViewModelBase, IDisposable
     public string FilterPlaceholder => Album is null ? "" : $"Filter {Album.Tracks.Count} tracks…";
     public bool HasRelated => Related.Count > 0;
     public string FavLabel => IsFav ? "Favorited" : "Add to favorites";
-    partial void OnIsFavChanged(bool value) => OnPropertyChanged(nameof(FavLabel));
-    partial void OnRelatedChanged(IReadOnlyList<AlbumCardViewModel> value) => OnPropertyChanged(nameof(HasRelated));
+    partial void OnIsFavChanged(bool value)
+    {
+        OnPropertyChanged(nameof(FavLabel));
+    }
+
+    partial void OnRelatedChanged(IReadOnlyList<AlbumCardViewModel> value)
+    {
+        OnPropertyChanged(nameof(HasRelated));
+    }
+
     partial void OnFilterTextChanged(string value)
     {
-        if (Tracks is null || Album is null) return;
-        var visible = Tracks.Filter(value);
+        if (Tracks is null || Album is null)
+        {
+            return;
+        }
+
+        int visible = Tracks.Filter(value);
         FilterCount = value.Length > 0 ? $"{visible} of {Album.Tracks.Count}" : "";
     }
     partial void OnAlbumChanged(Album? value)
@@ -78,7 +93,11 @@ public sealed partial class AlbumPanelViewModel : ViewModelBase, IDisposable
     }
     public void Show(string? slug, bool scroll = true)
     {
-        if (slug == Slug) return;
+        if (slug == Slug)
+        {
+            return;
+        }
+
         Slug = string.IsNullOrEmpty(slug) ? null : slug;
         FilterText = "";
         _load?.Cancel();
@@ -89,9 +108,12 @@ public sealed partial class AlbumPanelViewModel : ViewModelBase, IDisposable
             return;
         }
         Load().Forget(_app.Log);
-        if (scroll) _scroll(ScrollTarget.AlbumPanel, false);
+        if (scroll)
+        {
+            _scroll(ScrollTarget.AlbumPanel, false);
+        }
     }
-    void Clear()
+    private void Clear()
     {
         Tracks?.Dispose();
         Tracks = null;
@@ -99,10 +121,14 @@ public sealed partial class AlbumPanelViewModel : ViewModelBase, IDisposable
         IsLoading = IsReady = IsError = false;
     }
     [RelayCommand]
-    void Retry() => Load().Forget(_app.Log);
-    async Task Load()
+    private void Retry()
     {
-        var wanted = Slug!;
+        Load().Forget(_app.Log);
+    }
+
+    private async Task Load()
+    {
+        string wanted = Slug!;
         _load?.Cancel();
         if (_app.Catalog.Cached(wanted) is { } cached)
         {
@@ -112,25 +138,32 @@ public sealed partial class AlbumPanelViewModel : ViewModelBase, IDisposable
         Clear();
         IsLoading = true;
         SkeletonWidths = Enumerable.Range(0, 8).Select(_ => 40 + Math.Round(Random.Shared.NextDouble() * 40)).ToArray();
-        var cts = _load = new CancellationTokenSource();
+        CancellationTokenSource cts = _load = new CancellationTokenSource();
         try
         {
-            var album = await _app.Catalog.GetAlbumAsync(wanted, cts.Token);
-            if (wanted == Slug) Render(album);
+            Album album = await _app.Catalog.GetAlbumAsync(wanted, cts.Token);
+            if (wanted == Slug)
+            {
+                Render(album);
+            }
         }
         catch (OperationCanceledException)
         {
         }
         catch (KhinsiderException ex)
         {
-            if (wanted != Slug) return;
+            if (wanted != Slug)
+            {
+                return;
+            }
+
             Clear();
             IsError = true;
             ErrorText = ex.Message;
             ErrorIcon = ex.Offline ? IconKind.WifiOff : IconKind.Alert;
         }
     }
-    void Render(Album album)
+    private void Render(Album album)
     {
         Tracks?.Dispose();
         Album = album;
@@ -146,53 +179,153 @@ public sealed partial class AlbumPanelViewModel : ViewModelBase, IDisposable
         RenderHeader();
         IsLoading = IsError = false;
         IsReady = true;
-        if (FilterText.Length > 0) OnFilterTextChanged(FilterText);
+        if (FilterText.Length > 0)
+        {
+            OnFilterTextChanged(FilterText);
+        }
     }
-    void RenderHeader()
+    private void RenderHeader()
     {
-        if (Album is not { } album) return;
-        var fmt = _app.Downloads.EffectiveFormat(album);
-        var wanted = _app.Settings.Value.Format;
-        var length = album.TotalLength.Length > 0 ? album.TotalLength : Formatting.Length(album.TotalSec);
-        album.TotalSizes.TryGetValue(fmt.Key(), out var size);
+        if (Album is not { } album)
+        {
+            return;
+        }
+
+        AudioFormat fmt = _app.Downloads.EffectiveFormat(album);
+        AudioFormat wanted = _app.Settings.Value.Format;
+        string length = album.TotalLength.Length > 0 ? album.TotalLength : Formatting.Length(album.TotalSec);
+        _ = album.TotalSizes.TryGetValue(fmt.Key(), out string? size);
         Eyebrow = Formatting.JoinNonEmpty(" · ", album.Type.Length > 0 ? album.Type : "Album", album.DateAdded.Length > 0 ? $"Added {album.DateAdded}" : null).ToUpperInvariant();
-        var tags = new List<TagViewModel>(album.Platforms.Count + 6);
-        foreach (var p in album.Platforms) tags.Add(new(p, "accent"));
-        if (album.Year.Length > 0) tags.Add(new(album.Year));
+        List<TagViewModel> tags = new(album.Platforms.Count + 6);
+        foreach (string p in album.Platforms)
+        {
+            tags.Add(new(p, "accent"));
+        }
+
+        if (album.Year.Length > 0)
+        {
+            tags.Add(new(album.Year));
+        }
+
         tags.Add(new(Formatting.Plural(album.Tracks.Count, "track")));
-        if (length.Length > 0) tags.Add(new(length));
-        if (!string.IsNullOrEmpty(size)) tags.Add(new(size));
-        if (album.Formats.Count > 0) tags.Add(new(string.Join(" · ", album.Formats.Select(f => f.ToUpperInvariant()))));
-        if (fmt != wanted) tags.Add(new($"No {wanted.Label()}", "warn", $"This album has no {wanted.Label()} files, so it uses {fmt.Label()}"));
+        if (length.Length > 0)
+        {
+            tags.Add(new(length));
+        }
+
+        if (!string.IsNullOrEmpty(size))
+        {
+            tags.Add(new(size));
+        }
+
+        if (album.Formats.Count > 0)
+        {
+            tags.Add(new(string.Join(" · ", album.Formats.Select(f => f.ToUpperInvariant()))));
+        }
+
+        if (fmt != wanted)
+        {
+            tags.Add(new($"No {wanted.Label()}", "warn", $"This album has no {wanted.Label()} files, so it uses {fmt.Label()}"));
+        }
+
         Tags = tags;
-        var meta = new List<TextPart>();
+        List<TextPart> meta = [];
         void Add(string label, string value)
         {
-            if (meta.Count > 0) meta.Add(new("·", Separator: true));
+            if (meta.Count > 0)
+            {
+                meta.Add(new("·", Separator: true));
+            }
+
             meta.Add(new(label + " "));
             meta.Add(new(value, Bold: true));
         }
-        if (album.Developers.Count > 0) Add("Developed by", string.Join(", ", album.Developers));
-        if (album.Publishers.Count > 0) Add("Published by", string.Join(", ", album.Publishers));
-        if (album.Catalog.Length > 0) Add("Catalog", album.Catalog);
+        if (album.Developers.Count > 0)
+        {
+            Add("Developed by", string.Join(", ", album.Developers));
+        }
+
+        if (album.Publishers.Count > 0)
+        {
+            Add("Published by", string.Join(", ", album.Publishers));
+        }
+
+        if (album.Catalog.Length > 0)
+        {
+            Add("Catalog", album.Catalog);
+        }
+
         Meta = meta;
         DownloadFormat = $"· {fmt.Label()}";
     }
-    void OnLibrary(LibraryData old, LibraryData now)
+    private void OnLibrary(LibraryData old, LibraryData now)
     {
-        if (Album is not null && !ReferenceEquals(old.FavAlbums, now.FavAlbums)) IsFav = _app.Library.IsFavAlbum(Album.Slug);
+        if (Album is not null && !ReferenceEquals(old.FavAlbums, now.FavAlbums))
+        {
+            IsFav = _app.Library.IsFavAlbum(Album.Slug);
+        }
     }
-    void OnSettings(SettingsData old, SettingsData now)
+    private void OnSettings(SettingsData old, SettingsData now)
     {
-        if (old.Format != now.Format) RenderHeader();
+        if (old.Format != now.Format)
+        {
+            RenderHeader();
+        }
     }
-    [RelayCommand] void Top() => _scroll(ScrollTarget.Top, false);
-    [RelayCommand] void Play() { if (Album is { } a) _app.Player.PlayList(a.Tracks); }
-    [RelayCommand] void Shuffle() { if (Album is { } a) _app.Player.PlayList(a.Tracks, 0, true); }
-    [RelayCommand] void Download() { if (Album is { } a) _app.Downloads.DownloadAlbum(a); }
-    [RelayCommand] void Gallery() { if (Album is { Images.Count: > 0 } a) _app.Lightbox.Open(a.Images, 0, a.Title); }
-    [RelayCommand] void ToggleFavorite() { if (Album is { } a) _app.Actions.ToggleFavorite(a); }
-    [RelayCommand] void More(object anchor) { if (Album is { } a) _app.Actions.OpenAlbumMenu(anchor, a); }
+    [RelayCommand]
+    private void Top()
+    {
+        _scroll(ScrollTarget.Top, false);
+    }
+
+    [RelayCommand]
+    private void Play()
+    {
+        if (Album is { } a)
+        {
+            _app.Player.PlayList(a.Tracks);
+        }
+    }
+    [RelayCommand]
+    private void Shuffle()
+    {
+        if (Album is { } a)
+        {
+            _app.Player.PlayList(a.Tracks, 0, true);
+        }
+    }
+    [RelayCommand]
+    private void Download()
+    {
+        if (Album is { } a)
+        {
+            _app.Downloads.DownloadAlbum(a);
+        }
+    }
+    [RelayCommand]
+    private void Gallery()
+    {
+        if (Album is { Images.Count: > 0 } a)
+        {
+            _app.Lightbox.Open(a.Images, 0, a.Title);
+        }
+    }
+    [RelayCommand]
+    private void ToggleFavorite()
+    {
+        if (Album is { } a)
+        {
+            _app.Actions.ToggleFavorite(a);
+        }
+    }
+    [RelayCommand]
+    private void More(object anchor)
+    {
+        if (Album is { } a)
+        {
+            _app.Actions.OpenAlbumMenu(anchor, a);
+        }
+    }
     public void Dispose()
     {
         _load?.Cancel();

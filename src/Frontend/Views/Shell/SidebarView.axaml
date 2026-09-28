@@ -1,9 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:OSTream.ViewModels"
-             xmlns:c="using:OSTream.Controls"
-             x:Class="OSTream.Views.Shell.SidebarView"
-             x:DataType="vm:SidebarViewModel">
+              xmlns:vm="using:OSTream.ViewModels"
+              xmlns:fvm="using:OSTream.Frontend.ViewModels"
+               xmlns:c="using:OSTream.Frontend.Controls"
+              x:Class="OSTream.Views.Shell.SidebarView"
+              x:DataType="vm:SidebarViewModel">
   <UserControl.Styles>
     <Style Selector="Button.nav-item">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -105,7 +106,7 @@
     </Style>
   </UserControl.Styles>
   <UserControl.DataTemplates>
-    <DataTemplate x:DataType="vm:NavItemViewModel">
+    <DataTemplate x:DataType="fvm:NavItemViewModel">
       <Button Classes="nav-item" Classes.active="{Binding IsActive}" Command="{Binding GoCommand}" CommandParameter="{Binding Path}"
               ToolTip.Tip="{Binding Tip}" AutomationProperties.Name="{Binding Label}">
         <Grid ColumnDefinitions="Auto,*,Auto">

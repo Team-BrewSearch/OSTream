@@ -1,6 +1,10 @@
 using Avalonia.Controls;
 namespace OSTream.Views.Pages;
+
 public partial class RecentView : UserControl
 {
-    public RecentView() => InitializeComponent();
+    public RecentView()
+    {
+        InitializeComponent();
+    }
 }

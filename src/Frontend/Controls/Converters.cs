@@ -1,8 +1,9 @@
+using Avalonia.Data.Converters;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Avalonia.Data.Converters;
-namespace OSTream.Controls;
+namespace OSTream.Frontend.Controls;
+
 public static class Converters
 {
     public static readonly IValueConverter Equal = new FuncValueConverter<object?, object?, bool>((value, parameter) =>
@@ -13,9 +14,13 @@ public static class Converters
     public static readonly IValueConverter BreakAll = new FuncValueConverter<string?, string>(BreakEverywhere);
     public static string BreakEverywhere(string? text)
     {
-        var parts = new List<string>();
-        var elements = StringInfo.GetTextElementEnumerator(text ?? "");
-        while (elements.MoveNext()) parts.Add(elements.GetTextElement());
+        List<string> parts = [];
+        TextElementEnumerator elements = StringInfo.GetTextElementEnumerator(text ?? "");
+        while (elements.MoveNext())
+        {
+            parts.Add(elements.GetTextElement());
+        }
+
         return string.Join('\u200B', parts);
     }
 }

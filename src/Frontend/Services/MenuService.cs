@@ -1,9 +1,10 @@
-using System;
-using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using OSTream.Controls;
+using OSTream.Frontend.Controls;
+using System;
+using System.Collections.Generic;
 namespace OSTream.Services;
+
 public sealed record MenuEntry(
     string Label,
     IconKind Icon = IconKind.None,
@@ -20,7 +21,7 @@ public sealed record MenuEntry(
 }
 public sealed partial class MenuService : ObservableObject
 {
-    readonly Stack<IReadOnlyList<MenuEntry>> _stack = new();
+    private readonly Stack<IReadOnlyList<MenuEntry>> _stack = new();
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOpen))]
     public partial IReadOnlyList<MenuEntry>? Entries { get; private set; }
@@ -42,8 +43,12 @@ public sealed partial class MenuService : ObservableObject
     }
     public void Close()
     {
-        if (!IsOpen) return;
-        var anchor = Anchor;
+        if (!IsOpen)
+        {
+            return;
+        }
+
+        object? anchor = Anchor;
         Entries = null;
         Anchor = null;
         _stack.Clear();
@@ -62,8 +67,11 @@ public sealed partial class MenuService : ObservableObject
         Close();
         entry.Run?.Invoke();
     }
-    void GoBack()
+    private void GoBack()
     {
-        if (_stack.Count > 0) Entries = _stack.Pop();
+        if (_stack.Count > 0)
+        {
+            Entries = _stack.Pop();
+        }
     }
 }

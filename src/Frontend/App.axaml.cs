@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
@@ -13,12 +9,17 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Microsoft.Extensions.Logging;
-using OSTream.Controls;
 using OSTream.Core.Models;
-using OSTream.Themes;
-using OSTream.ViewModels;
+using OSTream.Frontend.Controls;
+using OSTream.Frontend.Themes;
+using OSTream.Frontend.ViewModels;
 using OSTream.Views;
-namespace OSTream;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+namespace OSTream.Frontend;
+
 public partial class App : Application
 {
     public override void Initialize()
@@ -34,16 +35,19 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var services = new AppServices();
+            AppServices services = new();
             LogUnhandledExceptions(services.Log);
             ArtView.Loader = services.Images;
             ApplyTheme(services.Settings.Value.Theme);
             services.Settings.Changed += (old, now) =>
             {
-                if (old.Theme != now.Theme) ApplyTheme(now.Theme);
+                if (old.Theme != now.Theme)
+                {
+                    ApplyTheme(now.Theme);
+                }
             };
-            var main = new MainViewModel(services);
-            var window = new MainWindow { DataContext = main };
+            MainViewModel main = new(services);
+            MainWindow window = new() { DataContext = main };
             services.Shell.Top = window;
             desktop.MainWindow = window;
             ActualThemeVariantChanged += (_, _) => FreezeTransitions(window);
@@ -54,7 +58,7 @@ public partial class App : Application
         }
         base.OnFrameworkInitializationCompleted();
     }
-    static void LogUnhandledExceptions(ILogger log)
+    private static void LogUnhandledExceptions(ILogger log)
     {
         AppDomain.CurrentDomain.UnhandledException += (_, e) => log.LogCritical(e.ExceptionObject as Exception, "Unhandled exception");
         TaskScheduler.UnobservedTaskException += (_, e) =>
@@ -64,18 +68,26 @@ public partial class App : Application
         };
         Dispatcher.UIThread.UnhandledException += (_, e) => log.LogCritical(e.Exception, "Unhandled UI exception");
     }
-    static void FreezeTransitions(TopLevel top)
+    private static void FreezeTransitions(TopLevel top)
     {
-        var frozen = new List<IDisposable>();
-        foreach (var visual in top.GetVisualDescendants().OfType<Animatable>())
+        List<IDisposable> frozen = [];
+        foreach (Animatable visual in top.GetVisualDescendants().OfType<Animatable>())
+        {
             if (visual.Transitions is { Count: > 0 } && visual.SetValue(Animatable.TransitionsProperty, null, BindingPriority.Animation) is { } undo)
+            {
                 frozen.Add(undo);
+            }
+        }
+
         top.RequestAnimationFrame(_ => top.RequestAnimationFrame(_ => frozen.ForEach(undo => undo.Dispose())));
     }
-    void ApplyTheme(ThemeChoice theme) => RequestedThemeVariant = theme switch
+    private void ApplyTheme(ThemeChoice theme)
     {
-        ThemeChoice.Light => ThemeVariant.Light,
-        ThemeChoice.Dark => ThemeVariant.Dark,
-        _ => ThemeVariant.Default,
-    };
+        RequestedThemeVariant = theme switch
+        {
+            ThemeChoice.Light => ThemeVariant.Light,
+            ThemeChoice.Dark => ThemeVariant.Dark,
+            _ => ThemeVariant.Default,
+        };
+    }
 }

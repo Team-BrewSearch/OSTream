@@ -1,21 +1,22 @@
-using System;
 using Avalonia.Threading;
 using OSTream.Core.Player;
+using System;
 using Windows.Media;
 using Windows.Media.Playback;
 using Windows.Storage.Streams;
-namespace OSTream.Platform.Windows;
-sealed class SmtcSession : IMediaSession
+namespace OSTream.Frontend.Platform.Windows;
+
+internal sealed class SmtcSession : IMediaSession
 {
-    readonly AppServices _app;
-    readonly MediaPlayer _host;
-    readonly SystemMediaTransportControls _smtc;
-    object? _shownTrack;
-    double _sentPosition = double.NaN;
-    double _sentDuration;
-    long _sentAt;
-    bool _sentPlaying;
-    SmtcSession(AppServices app)
+    private readonly AppServices _app;
+    private readonly MediaPlayer _host;
+    private readonly SystemMediaTransportControls _smtc;
+    private object? _shownTrack;
+    private double _sentPosition = double.NaN;
+    private double _sentDuration;
+    private long _sentAt;
+    private bool _sentPlaying;
+    private SmtcSession(AppServices app)
     {
         _app = app;
         _host = new MediaPlayer();
@@ -40,31 +41,43 @@ sealed class SmtcSession : IMediaSession
             return null;
         }
     }
-    void OnButton(SystemMediaTransportControls sender, SystemMediaTransportControlsButtonPressedEventArgs e) => Dispatcher.UIThread.Post(() =>
+    private void OnButton(SystemMediaTransportControls sender, SystemMediaTransportControlsButtonPressedEventArgs e)
     {
-        var player = _app.Player;
+        Dispatcher.UIThread.Post(() =>
+    {
+        PlayerService player = _app.Player;
         switch (e.Button)
         {
             case SystemMediaTransportControlsButton.Play when player.Status != PlayStatus.Playing: player.Toggle(); break;
             case SystemMediaTransportControlsButton.Pause when player.Status == PlayStatus.Playing: player.Toggle(); break;
             case SystemMediaTransportControlsButton.Stop:
-                if (player.Status == PlayStatus.Playing) player.Toggle();
+                if (player.Status == PlayStatus.Playing)
+                {
+                    player.Toggle();
+                }
+
                 player.Seek(0);
                 break;
             case SystemMediaTransportControlsButton.Next: player.Next(); break;
             case SystemMediaTransportControlsButton.Previous: player.Prev(); break;
         }
     });
-    void Update()
+    }
+
+    private void Update()
     {
-        var now = MediaSessions.Snapshot(_app);
+        NowPlaying now = MediaSessions.Snapshot(_app);
         _smtc.PlaybackStatus = now.Track is null ? MediaPlaybackStatus.Stopped : now.IsPlaying ? MediaPlaybackStatus.Playing : MediaPlaybackStatus.Paused;
         _smtc.IsNextEnabled = now.CanGoNext;
         _smtc.IsPreviousEnabled = now.CanGoPrevious;
         OnTime(_app.Player.Time);
-        if (ReferenceEquals(_shownTrack, now.Track)) return;
+        if (ReferenceEquals(_shownTrack, now.Track))
+        {
+            return;
+        }
+
         _shownTrack = now.Track;
-        var updater = _smtc.DisplayUpdater;
+        SystemMediaTransportControlsDisplayUpdater updater = _smtc.DisplayUpdater;
         updater.ClearAll();
         if (now.Track is { } track)
         {
@@ -72,18 +85,29 @@ sealed class SmtcSession : IMediaSession
             updater.MusicProperties.Title = track.Title;
             updater.MusicProperties.AlbumTitle = track.Album.Title;
             updater.MusicProperties.Artist = track.Album.Title.Length > 0 ? track.Album.Title : "KHInsider";
-            if (Core.Khinsider.KhinsiderClient.SecureMediaUrl(track.Album.Thumb) is { } art) updater.Thumbnail = RandomAccessStreamReference.CreateFromUri(new Uri(art));
+            if (Core.Khinsider.KhinsiderClient.SecureMediaUrl(track.Album.Thumb) is { } art)
+            {
+                updater.Thumbnail = RandomAccessStreamReference.CreateFromUri(new Uri(art));
+            }
         }
         updater.Update();
     }
-    void OnTime(PlaybackTime time)
+    private void OnTime(PlaybackTime time)
     {
-        if (time.Duration <= 0) return;
-        var playing = _app.Player.Status == PlayStatus.Playing;
-        var at = Environment.TickCount64;
-        var elapsed = (at - _sentAt) / 1000.0;
-        var expected = _sentPosition + (playing && _sentPlaying ? elapsed : 0);
-        if (playing == _sentPlaying && time.Duration == _sentDuration && Math.Abs(time.Current - expected) < 1.5 && elapsed < 5) return;
+        if (time.Duration <= 0)
+        {
+            return;
+        }
+
+        bool playing = _app.Player.Status == PlayStatus.Playing;
+        long at = Environment.TickCount64;
+        double elapsed = (at - _sentAt) / 1000.0;
+        double expected = _sentPosition + (playing && _sentPlaying ? elapsed : 0);
+        if (playing == _sentPlaying && time.Duration == _sentDuration && Math.Abs(time.Current - expected) < 1.5 && elapsed < 5)
+        {
+            return;
+        }
+
         _sentPosition = time.Current;
         _sentDuration = time.Duration;
         _sentAt = at;

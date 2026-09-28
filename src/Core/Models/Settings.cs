@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 namespace OSTream.Core.Models;
+
 public enum ThemeChoice { System, Light, Dark }
 public enum AudioFormat { Flac, Mp3, Ogg, Wav }
 public enum RepeatMode { Off, All, One }
@@ -24,23 +25,34 @@ public sealed record SettingsData
 }
 public static class AudioFormatExtensions
 {
-    static readonly AudioFormat[] FlacFirst = [AudioFormat.Flac, AudioFormat.Wav, AudioFormat.Mp3, AudioFormat.Ogg];
-    static readonly AudioFormat[] WavFirst = [AudioFormat.Wav, AudioFormat.Flac, AudioFormat.Mp3, AudioFormat.Ogg];
-    static readonly AudioFormat[] Mp3First = [AudioFormat.Mp3, AudioFormat.Ogg, AudioFormat.Flac, AudioFormat.Wav];
-    static readonly AudioFormat[] OggFirst = [AudioFormat.Ogg, AudioFormat.Mp3, AudioFormat.Flac, AudioFormat.Wav];
-    public static string Key(this AudioFormat format) => format switch
+    private static readonly AudioFormat[] FlacFirst = [AudioFormat.Flac, AudioFormat.Wav, AudioFormat.Mp3, AudioFormat.Ogg];
+    private static readonly AudioFormat[] WavFirst = [AudioFormat.Wav, AudioFormat.Flac, AudioFormat.Mp3, AudioFormat.Ogg];
+    private static readonly AudioFormat[] Mp3First = [AudioFormat.Mp3, AudioFormat.Ogg, AudioFormat.Flac, AudioFormat.Wav];
+    private static readonly AudioFormat[] OggFirst = [AudioFormat.Ogg, AudioFormat.Mp3, AudioFormat.Flac, AudioFormat.Wav];
+    public static string Key(this AudioFormat format)
     {
-        AudioFormat.Mp3 => "mp3",
-        AudioFormat.Ogg => "ogg",
-        AudioFormat.Wav => "wav",
-        _ => "flac",
-    };
-    public static string Label(this AudioFormat format) => format.Key().ToUpperInvariant();
-    public static AudioFormat[] Preference(this AudioFormat format) => format switch
+        return format switch
+        {
+            AudioFormat.Mp3 => "mp3",
+            AudioFormat.Ogg => "ogg",
+            AudioFormat.Wav => "wav",
+            _ => "flac",
+        };
+    }
+
+    public static string Label(this AudioFormat format)
     {
-        AudioFormat.Mp3 => Mp3First,
-        AudioFormat.Ogg => OggFirst,
-        AudioFormat.Wav => WavFirst,
-        _ => FlacFirst,
-    };
+        return format.Key().ToUpperInvariant();
+    }
+
+    public static AudioFormat[] Preference(this AudioFormat format)
+    {
+        return format switch
+        {
+            AudioFormat.Mp3 => Mp3First,
+            AudioFormat.Ogg => OggFirst,
+            AudioFormat.Wav => WavFirst,
+            _ => FlacFirst,
+        };
+    }
 }

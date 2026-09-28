@@ -1,20 +1,20 @@
+using NVorbis;
 using System;
 using System.IO;
-using NVorbis;
 namespace OSTream.Core.Audio;
+
 public sealed class VorbisDecoder : IAudioDecoder
 {
-    static readonly int[][] ToWavOrder =
+    private static readonly int[][] ToWavOrder =
     [
         [], [0], [0, 1], [0, 2, 1], [0, 1, 2, 3], [0, 2, 1, 3, 4], [0, 2, 1, 5, 3, 4], [0, 2, 1, 6, 5, 3, 4], [0, 2, 1, 7, 5, 6, 3, 4],
     ];
-    readonly Stream _stream;
-    readonly VorbisReader _reader;
-    readonly int _streamChannels;
-    readonly float[] _samples = [];
-    readonly float[] _ordered = [];
-    long _position;
-    bool _atEnd;
+    private readonly Stream _stream;
+    private readonly VorbisReader _reader;
+    private readonly int _streamChannels;
+    private readonly float[] _samples = [];
+    private readonly float[] _ordered = [];
+    private bool _atEnd;
     public VorbisDecoder(Stream stream)
     {
         _stream = stream;
@@ -37,19 +37,30 @@ public sealed class VorbisDecoder : IAudioDecoder
         }
         Channels = Math.Min(_streamChannels, 2);
         _samples = new float[4096 * _streamChannels];
-        if (_streamChannels > 2) _ordered = new float[4096 * _streamChannels];
+        if (_streamChannels > 2)
+        {
+            _ordered = new float[4096 * _streamChannels];
+        }
     }
     public int SampleRate { get; }
     public int Channels { get; }
     public long TotalFrames { get; }
-    public long Position => _position;
+    public long Position { get; private set; }
     public long StreamPosition => _stream.Position;
     public int Read(Span<float> dest)
     {
-        if (_atEnd) return 0;
-        var want = dest.Length / Channels;
-        if (TotalFrames > 0) want = (int)Math.Min(want, TotalFrames - _position);
-        var written = 0;
+        if (_atEnd)
+        {
+            return 0;
+        }
+
+        int want = dest.Length / Channels;
+        if (TotalFrames > 0)
+        {
+            want = (int)Math.Min(want, TotalFrames - Position);
+        }
+
+        int written = 0;
         while (written < want)
         {
             int frames;
@@ -59,34 +70,54 @@ public sealed class VorbisDecoder : IAudioDecoder
             }
             else
             {
-                var chunk = Math.Min(want - written, _samples.Length / _streamChannels);
+                int chunk = Math.Min(want - written, _samples.Length / _streamChannels);
                 frames = _reader.ReadSamples(_samples.AsSpan(0, chunk * _streamChannels)) / _streamChannels;
-                var order = ToWavOrder[_streamChannels];
-                for (var i = 0; i < frames; i++)
-                    for (var c = 0; c < _streamChannels; c++)
-                        _ordered[i * _streamChannels + c] = _samples[i * _streamChannels + order[c]];
+                int[] order = ToWavOrder[_streamChannels];
+                for (int i = 0; i < frames; i++)
+                {
+                    for (int c = 0; c < _streamChannels; c++)
+                    {
+                        _ordered[(i * _streamChannels) + c] = _samples[(i * _streamChannels) + order[c]];
+                    }
+                }
+
                 Downmix.ToStereo(_ordered, _streamChannels, dest[(written * 2)..], frames);
             }
-            if (frames == 0) break;
+            if (frames == 0)
+            {
+                break;
+            }
+
             written += frames;
-            _position += frames;
+            Position += frames;
         }
         return written;
     }
     public void Seek(long frame)
     {
-        var target = Math.Max(0, frame);
+        long target = Math.Max(0, frame);
         _atEnd = TotalFrames > 0 && target >= TotalFrames;
-        _position = _atEnd ? TotalFrames : target;
-        if (_atEnd) return;
-        var start = Math.Max(0, target - SampleRate);
-        _reader.SeekTo(start);
-        for (var skip = target - start; skip > 0;)
+        Position = _atEnd ? TotalFrames : target;
+        if (_atEnd)
         {
-            var frames = _reader.ReadSamples(_samples.AsSpan(0, (int)Math.Min(skip, _samples.Length / _streamChannels) * _streamChannels)) / _streamChannels;
-            if (frames == 0) break;
+            return;
+        }
+
+        long start = Math.Max(0, target - SampleRate);
+        _reader.SeekTo(start);
+        for (long skip = target - start; skip > 0;)
+        {
+            int frames = _reader.ReadSamples(_samples.AsSpan(0, (int)Math.Min(skip, _samples.Length / _streamChannels) * _streamChannels)) / _streamChannels;
+            if (frames == 0)
+            {
+                break;
+            }
+
             skip -= frames;
         }
     }
-    public void Dispose() => _reader.Dispose();
+    public void Dispose()
+    {
+        _reader.Dispose();
+    }
 }

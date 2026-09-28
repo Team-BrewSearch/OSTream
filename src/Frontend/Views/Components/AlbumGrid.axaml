@@ -1,7 +1,7 @@
 <ItemsControl xmlns="https://github.com/avaloniaui"
               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:vm="using:OSTream.ViewModels"
-              xmlns:c="using:OSTream.Controls"
+               xmlns:c="using:OSTream.Frontend.Controls"
               x:Class="OSTream.Views.Components.AlbumGrid">
   <ItemsControl.Styles>
     <Style Selector="c|AutoFillPanel">
