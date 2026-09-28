@@ -1,0 +1,4 @@
+<linker>
+  <assembly fullname="OSTream" preserve="All"/>
+  <assembly fullname="OSTream.Core" preserve="All"/>
+</linker>

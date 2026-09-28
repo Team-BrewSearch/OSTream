@@ -9,17 +9,23 @@
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>IL2026;IL2104</NoWarn>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets/ostream.ico</ApplicationIcon>
-    <AssemblyName>OSTream.Frontend</AssemblyName>
+    <AssemblyName>OSTream</AssemblyName>
     <RootNamespace>OSTream.Frontend</RootNamespace>
     <Version>1.0.0</Version>
     <TieredPGO>false</TieredPGO>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <PublishTrimmed>true</PublishTrimmed>
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="TrimmerRootDescriptor.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Core/OSTream.Core.csproj" />

@@ -54,21 +54,20 @@ set "RUNTIME=%~1"
 set "SELF_CONTAINED=%~2"
 set "OUTPUT=%PUBLISH_DIR%\%~1"
 echo.
-echo ============================================
-echo   Publishing %RUNTIME%  (self-contained: %SELF_CONTAINED%)
-echo ============================================
-set "EXTRA="
-if /i "%SELF_CONTAINED%"=="true" set "EXTRA=-p:EnableCompressionInSingleFile=true"
-dotnet publish "%PROJECT%" -c Release -r %RUNTIME% ^
-  --self-contained %SELF_CONTAINED% ^
-  -p:PublishSingleFile=true ^
-  -p:DebugType=none ^
-  -p:DebugSymbols=false ^
-  -p:IncludeNativeLibrariesForSelfExtract=true ^
-  %EXTRA% ^
-  -o "%OUTPUT%" ^
-  --nologo ^
-  --verbosity minimal
+  echo ============================================
+  echo   Publishing %RUNTIME%  (self-contained: %SELF_CONTAINED%)
+  echo ============================================
+  dotnet publish "%PROJECT%" -c Release -r %RUNTIME% ^
+    --self-contained %SELF_CONTAINED% ^
+    -p:PublishSingleFile=true ^
+    -p:EnableCompressionInSingleFile=true ^
+    -p:PublishTrimmed=true ^
+    -p:DebugType=none ^
+    -p:DebugSymbols=false ^
+    -p:IncludeNativeLibrariesForSelfExtract=true ^
+    -o "%OUTPUT%" ^
+    --nologo ^
+    --verbosity minimal
 if errorlevel 1 (
     echo [ERROR] %RUNTIME% failed.
     set /a ERROR_COUNT+=1

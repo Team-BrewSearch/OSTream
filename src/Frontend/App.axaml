@@ -8,8 +8,8 @@
              Name="OSTream"
              RequestedThemeVariant="Default">
   <Application.Styles>
-    <StyleInclude Source="avares://OSTream.Frontend/Themes/Controls.axaml" />
-    <StyleInclude Source="avares://OSTream.Frontend/Themes/Accessibility.axaml" />
+    <StyleInclude Source="avares://OSTream/Themes/Controls.axaml" />
+    <StyleInclude Source="avares://OSTream/Themes/Accessibility.axaml" />
   </Application.Styles>
   <Application.DataTemplates>
     <DataTemplate DataType="vm:DiscoverViewModel"><pages:DiscoverView /></DataTemplate>

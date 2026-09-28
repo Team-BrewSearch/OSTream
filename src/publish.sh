@@ -18,17 +18,14 @@ publish() {
     echo "============================================"
     echo "   Publishing $RUNTIME  (self-contained: $SELF_CONTAINED)"
     echo "============================================"
-    local EXTRA=""
-    if [ "$SELF_CONTAINED" = "true" ]; then
-        EXTRA="-p:EnableCompressionInSingleFile=true"
-    fi
     dotnet publish "$PROJECT" -c Release -r "$RUNTIME" \
         --self-contained "$SELF_CONTAINED" \
         -p:PublishSingleFile=true \
+        -p:EnableCompressionInSingleFile=true \
+        -p:PublishTrimmed=true \
         -p:DebugType=none \
         -p:DebugSymbols=false \
         -p:IncludeNativeLibrariesForSelfExtract=true \
-        $EXTRA \
         -o "$OUTPUT" \
         --nologo \
         --verbosity minimal

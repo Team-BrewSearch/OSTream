@@ -24,9 +24,9 @@ public partial class App : Application
     public override void Initialize()
     {
         Tokens.Install(this);
-        Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://OSTream.Frontend/App.axaml"))
+        Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://OSTream/App.axaml"))
         {
-            Source = new Uri("avares://OSTream.Frontend/Themes/Base.axaml"),
+            Source = new Uri("avares://OSTream/Themes/Base.axaml"),
         });
         AvaloniaXamlLoader.Load(this);
     }

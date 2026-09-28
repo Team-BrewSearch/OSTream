@@ -11,8 +11,8 @@ using OSTream.Controls;
 namespace OSTream.Themes;
 public static class Tokens
 {
-    public const string UiFontName = "avares://OSTream.Frontend/Assets/Fonts#Inter";
-    public const string MonoFontName = "avares://OSTream.Frontend/Assets/Fonts#JetBrains Mono";
+    public const string UiFontName = "avares://OSTream/Assets/Fonts#Inter";
+    public const string MonoFontName = "avares://OSTream/Assets/Fonts#JetBrains Mono";
     static readonly (string Key, string Dark, string Light)[] Colors =
     [
         ("Bg0", "#08080b", "#f5f5f8"),
