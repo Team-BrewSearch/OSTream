@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 namespace OSTream.Core.Khinsider;
@@ -14,17 +15,20 @@ public sealed class KhinsiderException(string message, bool offline = false, int
     public bool Offline { get; } = offline;
     public int? Status { get; } = status;
 }
+public delegate Task<(string FinalUrl, string Html)> PageLoader(string url, CancellationToken ct);
 public sealed class KhinsiderClient : IDisposable
 {
     private static readonly TimeSpan PageTimeout = TimeSpan.FromSeconds(30);
     private const int MaxBufferedResponse = 32 * 1024 * 1024;
     private readonly LruCache<string, IReadOnlyDictionary<string, string>> _trackUrls = new(512, ttl: Config.TrackUrlTtl);
     private readonly SingleFlight<IReadOnlyDictionary<string, string>> _resolving = new();
+    private readonly PageLoader? _pages;
     private readonly ILogger Log;
-    public KhinsiderClient(ILogger logger, HttpMessageHandler? handler = null)
+    public KhinsiderClient(ILogger logger, HttpMessageHandler? handler = null, PageLoader? pages = null)
     {
         Log = logger;
         Http = NewHttpClient(handler);
+        _pages = pages;
     }
     public static HttpClient NewHttpClient(HttpMessageHandler? handler = null)
     {
@@ -122,10 +126,19 @@ public sealed class KhinsiderClient : IDisposable
         timeout.CancelAfter(PageTimeout);
         try
         {
+            if (_pages is not null)
+            {
+                return await _pages(url, timeout.Token).ConfigureAwait(false);
+            }
+
             using HttpRequestMessage request = PageRequest(url);
             using HttpResponseMessage response = await Http.SendAsync(request, HttpCompletionOption.ResponseContentRead, timeout.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
+                string body = await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false);
+                Log.LogWarning("KHInsider returned {Status} for {Url} (cf-mitigated: {Mitigated}, cf-ray: {Ray}, title: {Title})",
+                    (int)response.StatusCode, url, Header(response, "cf-mitigated"), Header(response, "CF-RAY"),
+                    Regex.Match(body, "<title>(.*?)</title>", RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups[1].Value.Trim());
                 throw StatusError((int)response.StatusCode);
             }
 
@@ -141,6 +154,11 @@ public sealed class KhinsiderClient : IDisposable
             throw NetworkError(ex);
         }
     }
+    private static string Header(HttpResponseMessage response, string name)
+    {
+        return response.Headers.TryGetValues(name, out IEnumerable<string>? values) ? string.Join(",", values) : "none";
+    }
+
     public static KhinsiderException StatusError(int status)
     {
         return status switch

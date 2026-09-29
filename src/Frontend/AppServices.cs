@@ -20,6 +20,9 @@ public sealed class AppServices : IDisposable
 {
     private readonly FileLoggerProvider _logs;
     private readonly HttpClient _imageHttp;
+#if WINDOWS
+    private readonly Platform.Windows.WebViewPageLoader? _webPages;
+#endif
     public static string LogDir => Path.Combine(AppPaths.ConfigDir, "logs");
     public AppServices()
     {
@@ -29,7 +32,15 @@ public sealed class AppServices : IDisposable
             typeof(AppServices).Assembly.GetName().Version, RuntimeInformation.OSDescription, Environment.Version);
         Settings = new SettingsStore();
         Library = new LibraryStore();
-        Client = new KhinsiderClient(Log);
+        PageLoader? pages = null;
+#if WINDOWS
+        if (OperatingSystem.IsWindows())
+        {
+            _webPages = new Platform.Windows.WebViewPageLoader(() => Shell?.Top, Path.Combine(AppPaths.CacheDir, "WebView2"), Log);
+            pages = _webPages.LoadAsync;
+        }
+#endif
+        Client = new KhinsiderClient(Log, pages: pages);
         Catalog = new Catalog(Client);
         Toasts = new ToastService();
         Watch(Settings.Store, "settings", "Could not save settings");
@@ -106,6 +117,9 @@ public sealed class AppServices : IDisposable
         Settings.Dispose();
         Library.Dispose();
         Client.Dispose();
+#if WINDOWS
+        _webPages?.Dispose();
+#endif
         Images.Dispose();
         _imageHttp.Dispose();
         _logs.Dispose();

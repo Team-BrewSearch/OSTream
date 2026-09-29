@@ -44,11 +44,16 @@ public sealed class FileLoggerProvider(string directory, long maxBytes = 1024 * 
     }
     private void Open()
     {
+        bool startup = _writer is null;
         _writer?.Dispose();
         _writer = null;
         _ = Directory.CreateDirectory(directory);
         string path = Path.Combine(directory, FileName);
-        if (File.Exists(path) && new FileInfo(path).Length > maxBytes)
+        if (startup)
+        {
+            DeleteRotated();
+        }
+        else if (File.Exists(path) && new FileInfo(path).Length > maxBytes)
         {
             for (int i = keep; i >= 1; i--)
             {
@@ -59,7 +64,20 @@ public sealed class FileLoggerProvider(string directory, long maxBytes = 1024 * 
                 }
             }
         }
-        _writer = new StreamWriter(new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)) { AutoFlush = true };
+        _writer = new StreamWriter(new FileStream(path, startup ? FileMode.Create : FileMode.Append, FileAccess.Write, FileShare.ReadWrite)) { AutoFlush = true };
+    }
+    private void DeleteRotated()
+    {
+        for (int i = 1; i <= keep; i++)
+        {
+            try
+            {
+                File.Delete(Path.Combine(directory, $"ostream.{i}.log"));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
     }
     public void Dispose()
     {
