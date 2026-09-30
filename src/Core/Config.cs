@@ -29,7 +29,7 @@ public static class Config
     public const int ParallelTracks = 3;
     public const int MaxTracksPerJob = 2000;
     public static readonly string[] MediaHosts = ["downloads.khinsider.com", "vgmtreasurechest.com"];
-    public const string UserAgent = "OSTream/1.0 (+https://github.com/Team-BrewSearch/OSTream)";
+    public const string UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
     public static AlbumListInfo ListFor(string? id)
     {
         foreach (AlbumListInfo list in Lists)

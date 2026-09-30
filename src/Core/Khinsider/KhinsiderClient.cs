@@ -52,21 +52,35 @@ public sealed class KhinsiderClient : IDisposable
         HttpRequestMessage request = new(HttpMethod.Get, url);
         HttpRequestHeaders h = request.Headers;
         _ = h.TryAddWithoutValidation("User-Agent", Config.UserAgent);
-        _ = h.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+        _ = h.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;application/xhtml+xml;q=0.9,*/*;q=0.8");
         _ = h.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
+        _ = h.TryAddWithoutValidation("Cache-Control", "no-cache");
+        _ = h.TryAddWithoutValidation("Pragma", "no-cache");
+        _ = h.TryAddWithoutValidation("Priority", "u=0, i");
         _ = h.TryAddWithoutValidation("Referer", Config.BaseUrl);
         _ = h.TryAddWithoutValidation("Sec-Fetch-Dest", "document");
         _ = h.TryAddWithoutValidation("Sec-Fetch-Mode", "navigate");
         _ = h.TryAddWithoutValidation("Sec-Fetch-Site", "none");
         _ = h.TryAddWithoutValidation("Sec-Fetch-User", "?1");
+        _ = h.TryAddWithoutValidation("Sec-CH-UA", "\"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"");
+        _ = h.TryAddWithoutValidation("Sec-CH-UA-Mobile", "?0");
+        _ = h.TryAddWithoutValidation("Sec-CH-UA-Platform", "\"Linux\"");
         _ = h.TryAddWithoutValidation("Upgrade-Insecure-Requests", "1");
         return request;
     }
     public static HttpRequestMessage MediaRequest(string url)
     {
         HttpRequestMessage request = new(HttpMethod.Get, url);
-        _ = request.Headers.TryAddWithoutValidation("User-Agent", Config.UserAgent);
-        _ = request.Headers.TryAddWithoutValidation("Referer", Config.BaseUrl + "/");
+        HttpRequestHeaders h = request.Headers;
+        _ = h.TryAddWithoutValidation("User-Agent", Config.UserAgent);
+        _ = h.TryAddWithoutValidation("Accept", "*/*");
+        _ = h.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
+        _ = h.TryAddWithoutValidation("Referer", Config.BaseUrl + "/");
+        _ = h.TryAddWithoutValidation("Sec-Fetch-Dest", "audio");
+        _ = h.TryAddWithoutValidation("Sec-Fetch-Mode", "no-cors");
+        _ = h.TryAddWithoutValidation("Sec-CH-UA", "\"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"");
+        _ = h.TryAddWithoutValidation("Sec-CH-UA-Mobile", "?0");
+        _ = h.TryAddWithoutValidation("Sec-CH-UA-Platform", "\"Linux\"");
         return request;
     }
     public static string KhinsiderUrl(string? path)
