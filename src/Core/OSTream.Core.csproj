@@ -14,7 +14,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
     <PackageReference Include="NLayer" Version="3.0.0" />
     <PackageReference Include="NVorbis" Version="1.0.0-rc.2" />
-    <PackageReference Include="Silk.NET.OpenAL.Soft.Native" Version="1.23.1" />
+    <!-- Linux resolves OpenAL from the system: the bundled 1.23.1 enables full HRTF rendering on the pulse backend. -->
+    <PackageReference Include="Silk.NET.OpenAL.Soft.Native" Version="1.23.1" Condition="!$(RuntimeIdentifier.StartsWith('linux'))" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="OSTream" />
