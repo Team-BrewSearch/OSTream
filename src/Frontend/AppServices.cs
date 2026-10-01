@@ -51,6 +51,7 @@ public sealed class AppServices : IDisposable
         Manager = new DownloadManager(Client, () => Settings.DownloadDir, Log);
         Downloads = new DownloadService(Manager, Settings, Catalog, Toasts, OpenJobFolder, Log);
         Player = new PlayerService(Client, Settings, Library, Toasts, Log);
+        DiscordPresence = new DiscordPresenceService(this, Log);
         Navigator = new Navigator();
         Dialogs = new DialogService();
         Menus = new MenuService();
@@ -68,6 +69,7 @@ public sealed class AppServices : IDisposable
     public DownloadManager Manager { get; }
     public DownloadService Downloads { get; }
     public PlayerService Player { get; }
+    internal DiscordPresenceService DiscordPresence { get; }
     public Navigator Navigator { get; }
     public DialogService Dialogs { get; }
     public MenuService Menus { get; }
@@ -111,6 +113,7 @@ public sealed class AppServices : IDisposable
         }
 
         MediaSession.Dispose();
+        DiscordPresence.Dispose();
         Player.Dispose();
         Downloads.Dispose();
         Manager.Dispose();

@@ -69,6 +69,7 @@ public sealed partial class TopBarViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsLightTheme));
         OnPropertyChanged(nameof(IsDarkTheme));
     }
+
     private void RefreshSettings()
     {
         Format = _app.Settings.Value.Format;

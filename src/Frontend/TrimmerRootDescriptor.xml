@@ -1,4 +1,6 @@
 <linker>
   <assembly fullname="OSTream" preserve="All"/>
   <assembly fullname="OSTream.Core" preserve="All"/>
+  <assembly fullname="DiscordRPC" preserve="All"/>
+  <assembly fullname="Newtonsoft.Json" preserve="All"/>
 </linker>
