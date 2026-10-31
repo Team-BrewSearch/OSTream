@@ -3,6 +3,7 @@ using OSTream.Core;
 using OSTream.Core.Caching;
 using OSTream.Core.Khinsider;
 using OSTream.Core.Storage;
+using SkiaSharp;
 using System;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,8 @@ namespace OSTream.Frontend.Services;
 public sealed class ImageLoader : IDisposable
 {
     private const long MemoryBudget = 16L * 1024 * 1024;
+    private const long MaxSourcePixels = MemoryBudget / 4;
+    private const int MaxOutputDimension = 2048;
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan StaleTemp = TimeSpan.FromMinutes(1);
     private readonly HttpClient _http;
@@ -118,8 +121,39 @@ public sealed class ImageLoader : IDisposable
             await _decoders.WaitAsync().ConfigureAwait(false);
             try
             {
+                int sourceWidth;
+                int sourceHeight;
+                using (MemoryStream probe = new(bytes))
+                using (SKCodec? codec = SKCodec.Create(probe))
+                {
+                    if (codec is null)
+                    {
+                        return null;
+                    }
+
+                    sourceWidth = codec.Info.Width;
+                    sourceHeight = codec.Info.Height;
+                }
+
+                // Avalonia's Skia decoder may allocate both a source-sized bitmap and a resized bitmap.
+                if (sourceWidth <= 0 || sourceHeight <= 0 || (long)sourceWidth * sourceHeight > MaxSourcePixels)
+                {
+                    return null;
+                }
+
+                int decodeWidth = Math.Min(width, sourceWidth);
                 using MemoryStream stream = new(bytes);
-                return Bitmap.DecodeToWidth(stream, width, BitmapInterpolationMode.HighQuality);
+                if ((long)sourceHeight * decodeWidth > (long)MaxOutputDimension * sourceWidth)
+                {
+                    int decodeHeight = Math.Min(sourceHeight, MaxOutputDimension);
+                    return (long)sourceWidth * decodeHeight < sourceHeight
+                        ? null
+                        : Bitmap.DecodeToHeight(stream, decodeHeight, BitmapInterpolationMode.HighQuality);
+                }
+
+                return (long)sourceHeight * decodeWidth < sourceWidth
+                    ? null
+                    : Bitmap.DecodeToWidth(stream, decodeWidth, BitmapInterpolationMode.HighQuality);
             }
             catch (Exception)
             {
