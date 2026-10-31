@@ -8,7 +8,7 @@ public sealed class HtmlNode
     public const string TextName = "#text";
     public const string CommentName = "#comment";
     public const string DocumentName = "#document";
-    private List<KeyValuePair<string, string>>? _attributes;
+    private Dictionary<string, string>? _attributes;
     private List<HtmlNode>? _childNodes;
     internal HtmlNode(string name, string? data = null)
     {
@@ -28,33 +28,11 @@ public sealed class HtmlNode
     }
     internal void SetAttribute(string name, string value)
     {
-        _attributes ??= [];
-        foreach (KeyValuePair<string, string> pair in _attributes)
-        {
-            if (pair.Key == name)
-            {
-                return;
-            }
-        }
-
-        _attributes.Add(new(name, value));
+        _ = (_attributes ??= new(StringComparer.Ordinal)).TryAdd(name, value);
     }
     public string? Attr(string name)
     {
-        if (_attributes is null)
-        {
-            return null;
-        }
-
-        foreach (KeyValuePair<string, string> pair in _attributes)
-        {
-            if (pair.Key == name)
-            {
-                return pair.Value;
-            }
-        }
-
-        return null;
+        return name is not null && _attributes is not null && _attributes.TryGetValue(name, out string? value) ? value : null;
     }
     public string Id => Attr("id") ?? "";
     public bool HasClass(string className)
