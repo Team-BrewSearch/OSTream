@@ -36,32 +36,35 @@ public static partial class Parsers
         return int.TryParse(cell.Attr("colspan"), out int n) && n > 1 ? n : 1;
     }
 
-    private static List<string?> HeaderColumns(HtmlNode? headerRow, Func<string, int, string[]> mapLabel)
+    private static SortedDictionary<long, string> HeaderColumns(HtmlNode? headerRow, Func<string, int, string[]> mapLabel)
     {
-        List<string?> columns = [];
+        SortedDictionary<long, string> columns = [];
         if (headerRow is null)
         {
             return columns;
         }
 
+        // Keep only mapped columns; a span can be much larger than the HTML containing it.
+        long col = 0;
         foreach (HtmlNode th in headerRow.Children)
         {
             int span = Span(th);
             string[] keys = mapLabel(Text(th).ToLowerInvariant(), span);
-            for (int i = 0; i < span; i++)
+            for (int i = 0; i < Math.Min(span, keys.Length); i++)
             {
-                columns.Add(i < keys.Length ? keys[i] : null);
+                columns.Add(col + i, keys[i]);
             }
+            col += span;
         }
         return columns;
     }
-    private static Dictionary<string, HtmlNode> RowByColumn(IEnumerable<HtmlNode> cells, List<string?> columns)
+    private static Dictionary<string, HtmlNode> RowByColumn(IEnumerable<HtmlNode> cells, SortedDictionary<long, string> columns)
     {
         Dictionary<string, HtmlNode> map = [];
-        int col = 0;
+        long col = 0;
         foreach (HtmlNode cell in cells)
         {
-            if (col < columns.Count && columns[col] is { } key)
+            if (columns.TryGetValue(col, out string? key))
             {
                 map[key] = cell;
             }
@@ -113,7 +116,7 @@ public static partial class Parsers
         {
             List<HtmlNode> rows = table.Descendants("tr").ToList();
             HtmlNode? headerRow = rows.FirstOrDefault(r => r.First("th") is not null);
-            List<string?> columns = HeaderColumns(headerRow, (label, _) => label switch
+            SortedDictionary<long, string> columns = HeaderColumns(headerRow, (label, _) => label switch
             {
                 "album" => ["title"],
                 "platform" => ["platform"],
@@ -304,13 +307,13 @@ public static partial class Parsers
             })
             .Where(img => img.Full.Length > 0 || img.Thumb.Length > 0)
             .ToArray();
-        List<string?> columns = HeaderColumns(table.ById("songlist_header"), (label, span) =>
+        SortedDictionary<long, string> columns = HeaderColumns(table.ById("songlist_header"), (label, span) =>
         {
             return label == "song name"
                 ? span >= 2 ? ["title", "duration"] : ["title"]
                 : label == "cd" ? ["cd"] : label == "#" ? ["number"] : AudioFormats.Contains(label) ? [$"fmt:{label}"] : [];
         });
-        string[] formats = columns.Where(c => c is not null && c.StartsWith("fmt:", StringComparison.Ordinal)).Select(c => c![4..]).ToArray();
+        string[] formats = columns.Values.Where(c => c.StartsWith("fmt:", StringComparison.Ordinal)).Select(c => c[4..]).ToArray();
         string cover = images.Length > 0 ? images[0].Thumb : "";
         List<Track> tracks = [];
         List<(HtmlNode Link, Dictionary<string, HtmlNode> Cells)> rows = [];
