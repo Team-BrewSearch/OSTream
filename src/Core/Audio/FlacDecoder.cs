@@ -123,6 +123,8 @@ public sealed class FlacDecoder : IAudioDecoder
     }
     private bool DecodeFrame()
     {
+        const int maxInvalidFrames = 8;
+        int invalidFrames = 0;
         while (true)
         {
             if (!_bits.AtByteBoundary)
@@ -152,6 +154,11 @@ public sealed class FlacDecoder : IAudioDecoder
             }
             catch (Exception ex) when (ex is InvalidDataException or IndexOutOfRangeException)
             {
+                // Overlapping candidates can repeatedly decode the same samples before failing.
+                if (++invalidFrames >= maxInvalidFrames)
+                {
+                    throw new InvalidDataException("Too many invalid FLAC frames.", ex);
+                }
                 _bits.SeekToByte(start + 2);
                 if (!FindSync())
                 {
