@@ -7,6 +7,7 @@ byte[] validComments = Comments("vendor", "TITLE=test");
 CheckPlayback("original", fixture);
 CheckPlayback("ordinary comments", ReplaceComments(fixture, validComments));
 CheckPlayback("continued comments", ReplaceComments(fixture, Comments("vendor", new string('x', 70000))));
+CheckPlayback("continued setup", ReplaceComments(fixture, validComments, splitSetup: true));
 Reject("huge comment count", ReplaceComments(fixture, Packet(0, 0x7fffffff)));
 Reject("huge vendor length", ReplaceComments(fixture, Packet(0x7fffffff)));
 Reject("truncated vendor", ReplaceComments(fixture, Packet(100, 0)));
@@ -19,6 +20,14 @@ byte[] second = ReplaceComments(fixture, Packet(0, 0x7fffffff), serialDelta: 1);
 int firstPage = PageSize(fixture, 0), secondPage = PageSize(second, 0);
 Reject("multiplexed logical stream", fixture[..firstPage].Concat(second[..secondPage])
     .Concat(fixture[firstPage..]).Concat(second[secondPage..]).ToArray());
+RejectSetup("ordered codebook at EOF", Setup(1, 0, 0), "Truncated Ogg Vorbis codebook.");
+RejectSetup("ordered length over 32", Setup(1, 31, 0, 0, 1), "Invalid Ogg Vorbis ordered codebook.");
+RejectSetup("ordered count exceeds entries", Setup(2, 0, 3), "Invalid Ogg Vorbis ordered codebook.");
+RejectSetup("valid zero run followed by truncated book", SetupAfterZeroRun(), "Truncated Ogg Vorbis codebook.");
+byte[] badSetupStream = ReplaceComments(fixture, validComments, serialDelta: 2, setupOverride: Setup(1, 0, 0));
+int badFirstPage = PageSize(badSetupStream, 0);
+RejectSetupData("multiplexed malformed setup", fixture[..firstPage].Concat(badSetupStream[..badFirstPage])
+    .Concat(fixture[firstPage..]).Concat(badSetupStream[badFirstPage..]).ToArray(), "Truncated Ogg Vorbis codebook.");
 Console.WriteLine("All Vorbis regression checks passed.");
 
 static void CheckPlayback(string name, byte[] data)
@@ -46,6 +55,63 @@ static void Reject(string name, byte[] data)
         return;
     }
     throw new Exception($"{name}: malformed comments accepted");
+}
+
+void RejectSetup(string name, byte[] setup, string message) =>
+    RejectSetupData(name, ReplaceComments(fixture, validComments, setupOverride: setup), message);
+
+static void RejectSetupData(string name, byte[] data, string message)
+{
+    try
+    {
+        using var decoder = new VorbisDecoder(new MemoryStream(data));
+        _ = decoder.Read(new float[2048]);
+    }
+    catch (InvalidDataException ex) when (ex.Message == message)
+    {
+        Console.WriteLine($"PASS {name}");
+        return;
+    }
+    throw new Exception($"{name}: setup was not rejected by the codebook guard");
+}
+
+// Build setup packets with a single ordered codebook, using Vorbis least-significant-bit-first packing.
+static byte[] Setup(int entries, int initialLengthMinusOne, params int[] counts)
+{
+    var bits = new List<int>();
+    void Add(uint value, int count) { for (int i = 0; i < count; i++) bits.Add((int)(value >> i) & 1); }
+    foreach (byte b in "\x05vorbis"u8) Add(b, 8);
+    Add(0, 8); Add(0x564342, 24); Add(1, 16); Add((uint)entries, 24); Add(1, 1); Add((uint)initialLengthMinusOne, 5);
+    int remaining = entries;
+    foreach (int count in counts)
+    {
+        int width = 0;
+        for (int n = remaining; n != 0; n >>= 1) width++;
+        Add((uint)count, width);
+        remaining -= count;
+        if (remaining <= 0) break;
+    }
+    return PackBits(bits);
+}
+
+static byte[] SetupAfterZeroRun()
+{
+    var bits = new List<int>();
+    void Add(uint value, int count) { for (int i = 0; i < count; i++) bits.Add((int)(value >> i) & 1); }
+    foreach (byte b in "\x05vorbis"u8) Add(b, 8);
+    Add(1, 8); // two codebooks
+    Add(0x564342, 24); Add(1, 16); Add(1, 24); Add(1, 1); Add(0, 5);
+    Add(0, 1); Add(1, 1); // a legitimate zero-count run, followed by a length-2 entry
+    Add(0, 4); // no lookup table
+    Add(0x564342, 24); Add(1, 16); Add(1, 24); Add(1, 1); Add(0, 5); // second book runs out
+    return PackBits(bits);
+}
+
+static byte[] PackBits(List<int> bits)
+{
+    byte[] data = new byte[(bits.Count + 7) / 8];
+    for (int i = 0; i < bits.Count; i++) data[i / 8] |= (byte)(bits[i] << (i % 8));
+    return data;
 }
 
 static byte[] Packet(params uint[] values)
@@ -78,14 +144,14 @@ static byte[] Comments(string vendor, string comment)
 }
 
 // Rebuild the fixture's comment pages while retaining its identification, setup and audio packets.
-static byte[] ReplaceComments(byte[] source, byte[] comments, uint serialDelta = 0)
+static byte[] ReplaceComments(byte[] source, byte[] comments, uint serialDelta = 0, byte[]? setupOverride = null, bool splitSetup = false)
 {
     int firstSize = PageSize(source, 0);
     int headerSize = PageSize(source, firstSize);
     int audioStart = firstSize + headerSize;
     int headerSegments = source[firstSize + 26];
     int commentSize = source[firstSize + 27];
-    byte[] setup = source[(firstSize + 27 + headerSegments + commentSize)..audioStart];
+    byte[] setup = setupOverride ?? source[(firstSize + 27 + headerSegments + commentSize)..audioStart];
     uint serial = BinaryPrimitives.ReadUInt32LittleEndian(source.AsSpan(14)) + serialDelta;
     using var result = new MemoryStream();
     uint sequence = 0;
@@ -110,13 +176,23 @@ static byte[] ReplaceComments(byte[] source, byte[] comments, uint serialDelta =
         continuation = true;
         if (complete) break;
     }
-    int setupSegments = setup.Length / 255 + 1;
-    byte[] setupPage = new byte[27 + setupSegments + setup.Length];
-    "OggS"u8.CopyTo(setupPage);
-    setupPage[26] = (byte)setupSegments;
-    for (int i = 0; i < setupSegments; i++) setupPage[27 + i] = (byte)Math.Min(255, setup.Length - i * 255);
-    setup.CopyTo(setupPage, 27 + setupSegments);
-    WriteExistingPage(setupPage, result, serial, sequence++);
+    int setupPosition = 0;
+    do
+    {
+        int remaining = setup.Length - setupPosition;
+        int chunk = splitSetup && remaining > 255 ? 255 : remaining;
+        bool complete = chunk == remaining;
+        int segments = complete ? chunk / 255 + 1 : chunk / 255;
+        byte[] setupPage = new byte[27 + segments + chunk];
+        "OggS"u8.CopyTo(setupPage);
+        setupPage[5] = setupPosition > 0 ? (byte)1 : (byte)0;
+        setupPage[26] = (byte)segments;
+        for (int i = 0; i < segments; i++) setupPage[27 + i] = (byte)Math.Min(255, chunk - i * 255);
+        setup.AsSpan(setupPosition, chunk).CopyTo(setupPage.AsSpan(27 + segments));
+        WriteExistingPage(setupPage, result, serial, sequence++);
+        setupPosition += chunk;
+        if (complete) break;
+    } while (true);
     while (audioStart < source.Length)
     {
         int size = PageSize(source, audioStart);
