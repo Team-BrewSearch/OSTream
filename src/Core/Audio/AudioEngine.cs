@@ -12,6 +12,7 @@ public sealed class AudioEngine : IDisposable
     private const int AlBuffers = 4;
     private const int StartThreshold = 2;
     private const int ChunkQueue = 8;
+    private const int MaxChunkSamples = 256 * 1024; // 1 MiB of float samples, including pool rounding.
     private const long IdleClose = 30_000;
     private readonly Thread _thread;
     private readonly ConcurrentQueue<Action> _commands = new();
@@ -526,7 +527,8 @@ public sealed class AudioEngine : IDisposable
         private void Produce()
         {
             int channels = Decoder.Channels;
-            int framesPerChunk = Math.Max(4096, Decoder.SampleRate / 5);
+            int framesPerChunk = Math.Min(Math.Max(4096, Decoder.SampleRate / 5), MaxChunkSamples / channels);
+            int samplesPerChunk = checked(framesPerChunk * channels);
             bool finished = false;
             while (!_stop.IsCancellationRequested)
             {
@@ -557,8 +559,8 @@ public sealed class AudioEngine : IDisposable
                         continue;
                     }
                     long start = Decoder.Position;
-                    float[] data = ArrayPool<float>.Shared.Rent(framesPerChunk * channels);
-                    int frames = Decoder.Read(data.AsSpan(0, framesPerChunk * channels));
+                    float[] data = ArrayPool<float>.Shared.Rent(samplesPerChunk);
+                    int frames = Decoder.Read(data.AsSpan(0, samplesPerChunk));
                     if (frames == 0)
                     {
                         ArrayPool<float>.Shared.Return(data);
