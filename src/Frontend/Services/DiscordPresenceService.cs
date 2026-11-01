@@ -16,6 +16,7 @@ internal sealed class DiscordPresenceService : IDisposable
 
     private readonly AppServices _app;
     private readonly ILogger _log;
+    private readonly object _presenceLock = new();
     private DiscordRpcClient? _client;
     private bool _disposed;
     private DateTime? _presenceStart;
@@ -137,52 +138,53 @@ internal sealed class DiscordPresenceService : IDisposable
 
     private void OnPlayerChanged()
     {
-        if (_client is null || !_client.IsInitialized)
-        {
-            return;
-        }
-
         UpdatePresence();
     }
 
     private void OnTimeChanged(PlaybackTime time)
     {
-        if (_client is null || !_client.IsInitialized || _app.Player.Status != PlayStatus.Playing || _presenceStart is not { } start)
+        lock (_presenceLock)
         {
-            return;
-        }
+            if (_disposed || _client is null || !_client.IsInitialized || _app.Player.Status != PlayStatus.Playing)
+            {
+                return;
+            }
 
-        double expectedPosition = (DateTime.UtcNow - start).TotalSeconds;
-        if (Math.Abs(time.Current - expectedPosition) > PositionDriftThresholdSeconds)
-        {
-            UpdatePresence();
+            if (_presenceStart is not { } start || Math.Abs(time.Current - (DateTime.UtcNow - start).TotalSeconds) > PositionDriftThresholdSeconds)
+            {
+                UpdatePresence();
+            }
         }
     }
 
     private void UpdatePresence()
     {
-        if (_client is null || !_client.IsInitialized)
+        lock (_presenceLock)
         {
-            return;
-        }
+            DiscordRpcClient? client = _client;
+            if (_disposed || client is null || !client.IsInitialized)
+            {
+                return;
+            }
 
-        try
-        {
-            var activity = BuildActivity();
-            if (activity is null)
+            try
             {
-                _client.ClearPresence();
-                _presenceStart = null;
+                var activity = BuildActivity();
+                if (activity is null)
+                {
+                    client.ClearPresence();
+                    _presenceStart = null;
+                }
+                else
+                {
+                    client.SetPresence(activity);
+                    _presenceStart = activity.Timestamps?.Start;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _client.SetPresence(activity);
-                _presenceStart = activity.Timestamps?.Start;
+                _log.LogWarning(ex, "Discord presence update failed");
             }
-        }
-        catch (Exception ex)
-        {
-            _log.LogWarning(ex, "Discord presence update failed");
         }
     }
 
@@ -242,12 +244,15 @@ internal sealed class DiscordPresenceService : IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
+        lock (_presenceLock)
         {
-            return;
-        }
+            if (_disposed)
+            {
+                return;
+            }
 
-        _disposed = true;
+            _disposed = true;
+        }
 
         _app.Player.Changed -= OnPlayerChanged;
         _app.Player.TimeChanged -= OnTimeChanged;

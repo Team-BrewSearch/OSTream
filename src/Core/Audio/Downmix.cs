@@ -19,8 +19,8 @@ internal static class Downmix
                 case 8: left += c * (ch[2] + ch[4] + ch[6]); right += c * (ch[2] + ch[5] + ch[7]); break;
                 default: left += c * (ch[2] + ch[4]); right += c * (ch[2] + ch[5]); break;
             }
-            dest[2 * i] = left * 0.5f;
-            dest[(2 * i) + 1] = right * 0.5f;
+            dest[2 * i] = Math.Clamp(left * 0.5f, -1f, 1f);
+            dest[(2 * i) + 1] = Math.Clamp(right * 0.5f, -1f, 1f);
         }
     }
 }

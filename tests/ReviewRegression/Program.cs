@@ -1,15 +1,20 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using DiscordRPC;
+using DiscordRPC.IO;
+using Microsoft.Extensions.Logging.Abstractions;
 using OSTream.Core;
 using OSTream.Core.Audio;
 using OSTream.Core.Models;
 using OSTream.Core.Player;
 using OSTream.Frontend.Controls;
+using OSTream.Frontend;
 using OSTream.Services;
 
 var downmix = typeof(AudioEngine).Assembly.GetType("OSTream.Core.Audio.Downmix")!
@@ -19,6 +24,71 @@ const float c = 0.7071f * 0.5f;
 CheckChannels(6, [0.5f, 0.5f, c, 0, c, c]);
 CheckChannels(7, [0.5f, 0.5f, c, 0, c, c, c]);
 CheckChannels(8, [0.5f, 0.5f, c, 0, c, c, c, c]);
+
+for (int channels = 3; channels <= 8; channels++)
+{
+    // Exercise both polarities and every combination of full-scale channels.
+    for (int mask = 0; mask < 1 << channels; mask++)
+    {
+        float[] input = Enumerable.Range(0, channels).Select(i => (mask & (1 << i)) == 0 ? -1f : 1f).ToArray();
+        float[] output = new float[2];
+        downmix(input, channels, output, 1);
+        Assert(output.All(sample => sample >= -1f && sample <= 1f), $"{channels}-channel downmix exceeded full scale");
+    }
+}
+
+float[] quietOutput = new float[2];
+downmix(Enumerable.Repeat(0.25f, 8).ToArray(), 8, quietOutput, 1);
+Assert(Math.Abs(quietOutput[0] - (0.125f + (3 * c * 0.25f))) < 0.00001f && quietOutput[0] == quietOutput[1],
+    "In-range multichannel gain changed");
+
+// Use an offline RPC client to exercise presence updates without Discord or audio hardware.
+using (var rpc = new DiscordRpcClient("123456789012345678", -1, null, false, new OfflinePipe()))
+{
+    Assert(rpc.Initialize(), "Offline RPC client did not initialize");
+    var player = (PlayerService)RuntimeHelpers.GetUninitializedObject(typeof(PlayerService));
+    var queue = new PlayQueue();
+    queue.SetList([new Track { Title = "First" }, new Track { Title = "Second" }], 0, false);
+    SetField(player, "<Queue>k__BackingField", queue);
+    SetField(player, "<Status>k__BackingField", PlayStatus.Playing);
+    var app = (AppServices)RuntimeHelpers.GetUninitializedObject(typeof(AppServices));
+    SetField(app, "<Player>k__BackingField", player);
+    Type serviceType = typeof(AppServices).Assembly.GetType("OSTream.Frontend.Services.DiscordPresenceService")!;
+    object service = RuntimeHelpers.GetUninitializedObject(serviceType);
+    object presenceLock = new();
+    SetField(service, "_app", app);
+    SetField(service, "_log", NullLogger.Instance);
+    SetField(service, "_client", rpc);
+    SetField(service, "_presenceLock", presenceLock);
+    MethodInfo onTime = serviceType.GetMethod("OnTimeChanged", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    MethodInfo update = serviceType.GetMethod("UpdatePresence", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    FieldInfo start = serviceType.GetField("_presenceStart", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    onTime.Invoke(service, [new PlaybackTime(0, 0, 0)]);
+    Assert(start.GetValue(service) is DateTime && rpc.CurrentPresence?.Details == "First", "Missing timestamp did not restore presence");
+    DateTime near = DateTime.UtcNow.AddSeconds(-1);
+    start.SetValue(service, near);
+    onTime.Invoke(service, [new PlaybackTime(1, 0, 0)]);
+    Assert((DateTime)start.GetValue(service)! == near, "Ordinary playback caused a presence update");
+    onTime.Invoke(service, [new PlaybackTime(10, 0, 0)]);
+    Assert((DateTime)start.GetValue(service)! > near, "Playback drift did not refresh presence");
+
+    using var entered = new ManualResetEventSlim();
+    Task pending;
+    lock (presenceLock)
+    {
+        pending = Task.Run(() => { entered.Set(); update.Invoke(service, null); });
+        Assert(entered.Wait(TimeSpan.FromSeconds(5)) && !pending.Wait(100), "Presence update did not wait for the active update");
+        Assert(queue.JumpTo(1), "Could not change tracks");
+    }
+    Assert(pending.Wait(TimeSpan.FromSeconds(5)), "Presence update did not complete");
+    Assert(rpc.CurrentPresence?.Details == "Second" && start.GetValue(service) is DateTime, "Concurrent update submitted stale presence");
+}
+
+static void SetField(object target, string name, object value)
+{
+    target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
+}
 
 void CheckChannels(int channels, float[] contribution)
 {
@@ -125,3 +195,15 @@ static void Assert(bool condition, string message)
 }
 
 delegate void DownmixDelegate(ReadOnlySpan<float> source, int channels, Span<float> dest, int frames);
+
+sealed class OfflinePipe : INamedPipeClient
+{
+    public DiscordRPC.Logging.ILogger Logger { get; set; } = new DiscordRPC.Logging.NullLogger();
+    public bool IsConnected => false;
+    public int ConnectedPipe => -1;
+    public bool Connect(int pipe) => false;
+    public bool ReadFrame(out PipeFrame frame) { frame = default; return false; }
+    public bool WriteFrame(PipeFrame frame) => false;
+    public void Close() { }
+    public void Dispose() { }
+}
