@@ -6,6 +6,8 @@ namespace OSTream.Core.Storage;
 public static class AtomicFile
 {
     public const string TempSuffix = ".part";
+    /// <summary>Writes to a temporary file beside the destination, then moves it over the destination.</summary>
+    /// <remarks>Write and move errors propagate. Temporary-file deletion is attempted even if writing or moving fails.</remarks>
     public static void Write(string path, Action<Stream> write)
     {
         string temp = path + TempSuffix;
@@ -23,6 +25,8 @@ public static class AtomicFile
             TryDelete(temp);
         }
     }
+    /// <summary>Asynchronously writes to a temporary file beside the destination, then moves it over the destination.</summary>
+    /// <remarks>Write and move errors propagate. Temporary-file deletion is attempted even if writing or moving fails.</remarks>
     public static async Task WriteAsync(string path, Func<Stream, Task> write)
     {
         string temp = path + TempSuffix;
@@ -40,6 +44,7 @@ public static class AtomicFile
             TryDelete(temp);
         }
     }
+    /// <summary>Deletes a file, ignoring I/O and access errors.</summary>
     public static void TryDelete(string path)
     {
         try

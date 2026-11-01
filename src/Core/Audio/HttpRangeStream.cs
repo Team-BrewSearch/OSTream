@@ -47,6 +47,11 @@ public sealed class HttpRangeStream : Stream
         _blocks = new byte[count][];
         _filled = new int[count];
     }
+    /// <summary>Opens a seekable, buffered audio stream and starts downloading in the background.</summary>
+    /// <param name="newRequest">Creates a fresh request for the initial download and subsequent range requests.</param>
+    /// <remarks>The supplied cancellation token applies to opening the stream. Dispose the stream to stop its background download.</remarks>
+    /// <exception cref="IOException">The response has no positive known length or is too large to buffer.</exception>
+    /// <exception cref="HttpRequestException">The server rejects the initial request or the request fails.</exception>
     public static Task<HttpRangeStream> OpenAsync(HttpClient http, Func<HttpRequestMessage> newRequest, CancellationToken ct)
     {
         return OpenAsync(http, newRequest, ct, DefaultIdleTimeout);
@@ -116,6 +121,11 @@ public sealed class HttpRangeStream : Stream
         return Read(buffer.AsSpan(offset, count));
     }
 
+    /// <summary>Reads available bytes from the current position, waiting for data if necessary.</summary>
+    /// <returns>The number of bytes read, possibly fewer than requested; zero for an empty buffer or at the end of the stream.</returns>
+    /// <exception cref="OperationCanceledException">A pending read is interrupted.</exception>
+    /// <exception cref="IOException">The background download fails after its retries.</exception>
+    /// <exception cref="ObjectDisposedException">The stream is disposed while a read needs data.</exception>
     public override int Read(Span<byte> buffer)
     {
         if (buffer.Length == 0 || _position >= Length)
@@ -163,6 +173,7 @@ public sealed class HttpRangeStream : Stream
             return available;
         }
     }
+    /// <summary>Interrupts a waiting read or the next nonempty read before the end of the stream with <see cref="OperationCanceledException"/>. The read consumes the interrupt.</summary>
     public void Interrupt()
     {
         lock (_gate)
@@ -171,6 +182,7 @@ public sealed class HttpRangeStream : Stream
             Monitor.PulseAll(_gate);
         }
     }
+    /// <summary>Clears a pending read interrupt.</summary>
     public void ClearInterrupt()
     {
         lock (_gate)

@@ -15,6 +15,8 @@ public sealed class PlayQueue
     public bool HasNext => Position + 1 < _order.Count;
     public int Count => _order.Count;
     public int Version { get; private set; }
+    /// <summary>Enumerates tracks after the current position in playback order.</summary>
+    /// <returns>Each track with its index in <see cref="Tracks"/>, which may differ from its playback position.</returns>
     public IEnumerable<(int QueueIndex, Track Track)> UpNext()
     {
         for (int i = Position + 1; i < _order.Count; i++)
@@ -43,6 +45,9 @@ public sealed class PlayQueue
         int[] rest = Formatting.Shuffled(all.Where(i => i != startQueueIndex).ToArray());
         return startQueueIndex >= 0 ? [startQueueIndex, .. rest] : [.. rest];
     }
+    /// <summary>Replaces the queue and selects the starting track.</summary>
+    /// <param name="start">Index in <paramref name="tracks"/>; callers should supply a valid index for a nonempty list.</param>
+    /// <param name="shuffle">When true, puts the starting track first and shuffles the remaining tracks.</param>
     public void SetList(IReadOnlyList<Track> tracks, int start, bool shuffle)
     {
         _tracks.Clear();
@@ -51,6 +56,7 @@ public sealed class PlayQueue
         Position = shuffle ? 0 : start;
         Version++;
     }
+    /// <summary>Inserts tracks immediately after the current playback position, preserving their supplied order.</summary>
     public void InsertNext(IReadOnlyList<Track> tracks)
     {
         int at = _tracks.Count;
@@ -65,6 +71,8 @@ public sealed class PlayQueue
         _order.AddRange(Enumerable.Range(at, tracks.Count));
         Version++;
     }
+    /// <summary>Selects a track by its index in <see cref="Tracks"/>.</summary>
+    /// <returns>False if the index is not in the playback order; otherwise, true.</returns>
     public bool JumpTo(int queueIndex)
     {
         int pos = _order.IndexOf(queueIndex);
@@ -77,6 +85,8 @@ public sealed class PlayQueue
         Version++;
         return true;
     }
+    /// <summary>Removes a track from playback order by its index in <see cref="Tracks"/>.</summary>
+    /// <returns>False if the track is absent or current; otherwise, true. The track remains in <see cref="Tracks"/>.</returns>
     public bool Remove(int queueIndex)
     {
         int pos = _order.IndexOf(queueIndex);
@@ -103,6 +113,10 @@ public sealed class PlayQueue
 
         Version++;
     }
+    /// <summary>Moves to the next track, optionally wrapping to the beginning.</summary>
+    /// <param name="repeatAll">Whether to wrap when the end of a nonempty queue is reached.</param>
+    /// <param name="shuffle">When wrapping, reshuffles the playback order and avoids an immediate repeat if there is more than one track.</param>
+    /// <returns>True if the position changed or wrapped; false if there is no next track.</returns>
     public bool Advance(bool repeatAll, bool shuffle)
     {
         if (Position + 1 < _order.Count)
@@ -142,6 +156,7 @@ public sealed class PlayQueue
         Version++;
         return true;
     }
+    /// <summary>Shuffles or restores queue-index order for upcoming tracks, leaving the current and previous order intact.</summary>
     public void Reorder(bool shuffle)
     {
         if (Position < 0)

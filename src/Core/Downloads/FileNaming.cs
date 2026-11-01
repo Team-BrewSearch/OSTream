@@ -23,6 +23,8 @@ public static partial class FileNaming
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();
     private const int MaxNameBytes = 200;
+    /// <summary>Creates a file name component by replacing invalid characters and normalizing whitespace.</summary>
+    /// <remarks>The result is limited to 200 UTF-8 bytes and avoids reserved Windows device names. If it is empty, the fallback is returned unchanged.</remarks>
     public static string SafeName(string? name, string fallback = "Untitled")
     {
         string s = InvalidChars().Replace(name ?? "", "-");
@@ -50,6 +52,10 @@ public static partial class FileNaming
         }
         return sb.ToString();
     }
+    /// <summary>Creates a track file name with an optional disc prefix and extension.</summary>
+    /// <param name="pad">Minimum width for a numeric track number; when nonpositive, the width is based on <paramref name="total"/>. Numeric numbers are padded to at least two digits.</param>
+    /// <param name="index">Zero-based fallback index used when <paramref name="number"/> is blank.</param>
+    /// <param name="ext">Extension appended after the sanitized name, without a leading period.</param>
     public static string TrackFileName(string title, string number, string cd, int pad, int index, int total, string ext)
     {
         string n = number.Trim().TrimEnd('.').Trim();

@@ -19,6 +19,8 @@ public sealed class LruCache<TKey, TValue>(long capacity, Func<TValue, long>? we
             }
         }
     }
+    /// <summary>Gets an unexpired entry and marks it as most recently used.</summary>
+    /// <returns>False for a missing or expired entry; in either case, <paramref name="value"/> is set to its default.</returns>
     public bool TryGet(TKey key, out TValue value)
     {
         lock (_lock)
@@ -38,6 +40,8 @@ public sealed class LruCache<TKey, TValue>(long capacity, Func<TValue, long>? we
             return false;
         }
     }
+    /// <summary>Replaces an entry and evicts least recently used entries until the cache is within its weight capacity.</summary>
+    /// <remarks>An entry heavier than the capacity is not stored; an existing entry for the key is still removed.</remarks>
     public void Set(TKey key, TValue value)
     {
         long weight = weigh?.Invoke(value) ?? 1;

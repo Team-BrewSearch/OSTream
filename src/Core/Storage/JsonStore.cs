@@ -29,6 +29,8 @@ public sealed class JsonStore<T> : IDisposable where T : class
     private T? _pending;
     private bool _failing;
     public event Action<Exception>? FlushFailed;
+    /// <summary>Loads a JSON value, or uses the fallback if the file is missing, unreadable, invalid, or contains null.</summary>
+    /// <remarks>Invalid JSON is copied to a backup when possible. A caught file-access error or failed backup makes the store read-only. Normalization applies only to a loaded value, and its exceptions propagate.</remarks>
     public JsonStore(string path, JsonTypeInfo<T> type, T fallback, Func<T, T>? normalize = null)
     {
         _path = path;
@@ -80,6 +82,8 @@ public sealed class JsonStore<T> : IDisposable where T : class
             return null;
         }
     }
+    /// <summary>Updates the value and schedules a save 300 milliseconds after the latest set.</summary>
+    /// <remarks>A read-only store updates its value in memory without scheduling a save. After disposal, a writable store flushes the value immediately.</remarks>
     public void Set(T value)
     {
         Value = value;
@@ -99,6 +103,8 @@ public sealed class JsonStore<T> : IDisposable where T : class
         }
         Flush();
     }
+    /// <summary>Attempts to save the pending value immediately.</summary>
+    /// <remarks>I/O, access, unsupported-operation, and JSON errors leave the value pending and raise <see cref="FlushFailed"/> once until a save succeeds. Other errors, including errors from event handlers, propagate.</remarks>
     public void Flush()
     {
         lock (_writeLock)

@@ -83,6 +83,8 @@ public sealed class KhinsiderClient : IDisposable
         _ = h.TryAddWithoutValidation("Sec-CH-UA-Platform", "\"Linux\"");
         return request;
     }
+    /// <summary>Converts a KHInsider path or base URL into an absolute KHInsider URL.</summary>
+    /// <exception cref="KhinsiderException">The path is invalid or resolves to a different host.</exception>
     public static string KhinsiderUrl(string? path)
     {
         path = (path ?? "").Trim();
@@ -101,6 +103,8 @@ public sealed class KhinsiderClient : IDisposable
             ? throw new KhinsiderException("Only downloads.khinsider.com can be fetched.")
             : url;
     }
+    /// <summary>Returns an HTTPS media URL for an allowed host and a path with at least two segments, or null if it is not accepted.</summary>
+    /// <remarks>Default-port HTTP URLs are upgraded to HTTPS; site-relative URLs are resolved against the KHInsider base URL.</remarks>
     public static string? SecureMediaUrl(string? url)
     {
         if (!Uri.TryCreate(Formatting.SiteUrl(url), UriKind.Absolute, out Uri? uri))
@@ -129,6 +133,9 @@ public sealed class KhinsiderClient : IDisposable
         }
         return null;
     }
+    /// <summary>Fetches a KHInsider page and returns its final URL and HTML.</summary>
+    /// <remarks>Requests time out after 30 seconds. Caller cancellation propagates; timeouts and HTTP request failures are converted to <see cref="KhinsiderException"/>.</remarks>
+    /// <exception cref="KhinsiderException">The path is invalid, the server returns an error, or the request times out or fails with an HTTP request error.</exception>
     public Task<(string FinalUrl, string Html)> GetPageAsync(string path, CancellationToken ct = default)
     {
         return FetchAsync(KhinsiderUrl(path), ct);
@@ -190,6 +197,9 @@ public sealed class KhinsiderClient : IDisposable
             : new KhinsiderException($"Could not reach KHInsider: {ex.InnerException?.Message ?? ex.Message}", offline: true);
     }
 
+    /// <summary>Resolves a song page to audio URLs keyed by format, using cached results when available.</summary>
+    /// <remarks>Concurrent resolutions for a URL are shared. Cancellation stops this caller's wait but does not cancel the shared request; a cache hit returns immediately.</remarks>
+    /// <exception cref="KhinsiderException">The path is invalid, the request fails with a KHInsider error, the page cannot be parsed, or no audio links are found.</exception>
     public Task<IReadOnlyDictionary<string, string>> ResolveTrackAsync(string path, CancellationToken ct = default)
     {
         string url = KhinsiderUrl(path);

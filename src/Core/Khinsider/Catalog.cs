@@ -22,6 +22,9 @@ public sealed class Catalog(KhinsiderClient client)
         return !string.IsNullOrEmpty(slug) && _albums.TryGet(slug, out Album? album) ? album : null;
     }
 
+    /// <summary>Gets an album from the cache or loads it from KHInsider.</summary>
+    /// <remarks>Concurrent loads for a slug are shared. Cancellation stops this caller's wait but does not cancel the shared load; a cache hit returns immediately.</remarks>
+    /// <exception cref="KhinsiderException">The page request fails with a KHInsider error, parsing fails, or the album has no track list.</exception>
     public Task<Album> GetAlbumAsync(string slug, CancellationToken ct = default)
     {
         if (Cached(slug) is { } hit)
@@ -66,6 +69,8 @@ public sealed class Catalog(KhinsiderClient client)
 
         return albums;
     }
+    /// <summary>Requests a random album and returns its slug, or an empty string if the final URL has no album slug.</summary>
+    /// <remarks>A successfully parsed album is cached. Request errors propagate; parsing errors are converted to <see cref="KhinsiderException"/>.</remarks>
     public async Task<string> RandomAlbumSlugAsync(CancellationToken ct = default)
     {
         (string? finalUrl, string? html) = await client.GetPageAsync("/random-album", ct).ConfigureAwait(false);
