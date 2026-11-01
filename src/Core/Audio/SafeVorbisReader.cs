@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 namespace OSTream.Core.Audio;
 
-// NVorbis allocates comment strings and the comment array before checking packet data.
-// Intercept every logical stream, including streams discovered during seeking or decoding.
+// Check comments and setup codebooks in every logical stream, including streams
+// discovered during seeking or decoding.
 internal sealed class SafeVorbisReader : IDisposable
 {
     private readonly ContainerReader _container;
@@ -19,7 +19,7 @@ internal sealed class SafeVorbisReader : IDisposable
         _container = new ContainerReader(stream, closeOnDispose: true);
         _container.NewStreamCallback = provider =>
         {
-            _decoders.Add(new StreamDecoder(new CommentCheckingProvider(provider)));
+            _decoders.Add(new StreamDecoder(new HeaderCheckingProvider(provider)));
             return true;
         };
         try
@@ -54,7 +54,7 @@ internal sealed class SafeVorbisReader : IDisposable
         _container.Dispose();
     }
 
-    private sealed class CommentCheckingProvider(IPacketProvider inner) : IPacketProvider, IDisposable
+    private sealed class HeaderCheckingProvider(IPacketProvider inner) : IPacketProvider, IDisposable
     {
         // Covers the reference array, per-string overhead, UTF-16 strings, temporary UTF-8
         // buffers, and the bounded copy used to prevent changes after validation.
@@ -72,11 +72,17 @@ internal sealed class SafeVorbisReader : IDisposable
         public IPacket GetNextPacket()
         {
             IPacket packet = inner.GetNextPacket();
-            if (_headerPackets < 2 && ++_headerPackets == 2 && packet is not null)
+            if (_headerPackets < 3 && packet is not null)
             {
+                _headerPackets++;
                 try
                 {
-                    return ValidateComments(packet);
+                    return _headerPackets switch
+                    {
+                        2 => ValidateComments(packet),
+                        3 => new SetupCheckingPacket(packet),
+                        _ => packet,
+                    };
                 }
                 catch
                 {
