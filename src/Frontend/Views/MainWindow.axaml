@@ -1,0 +1,104 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OSTream.ViewModels"
+        xmlns:fvm="using:OSTream.Frontend.ViewModels"
+        xmlns:sh="using:OSTream.Views.Shell"
+        xmlns:ov="using:OSTream.Views.Overlays"
+        xmlns:c="using:OSTream.Frontend.Controls"
+        x:Class="OSTream.Views.MainWindow"
+        x:DataType="fvm:MainViewModel"
+        Title="OSTream"
+        Icon="/Assets/ostream.ico"
+        Width="1440" Height="900" MinWidth="480" MinHeight="420"
+        WindowStartupLocation="CenterScreen">
+  <Window.Styles>
+    <Style Selector="sh|SidebarView#Sidebar">
+      <Setter Property="Width" Value="220" />
+    </Style>
+    <Style Selector="Panel.compact sh|SidebarView#Sidebar">
+      <Setter Property="Width" Value="64" />
+    </Style>
+    <Style Selector="Panel.mobile sh|SidebarView#Sidebar">
+      <Setter Property="Width" Value="56" />
+    </Style>
+    <Style Selector="ScrollViewer#ContentScroll">
+      <Setter Property="Padding" Value="28,24,28,48" />
+    </Style>
+    <Style Selector="Panel.compact ScrollViewer#ContentScroll">
+      <Setter Property="Padding" Value="20,20,20,40" />
+    </Style>
+    <Style Selector="Panel.mobile ScrollViewer#ContentScroll">
+      <Setter Property="Padding" Value="14,16,14,32" />
+    </Style>
+    <Style Selector="sh|RailView#Rail">
+      <Setter Property="Width" Value="300" />
+      <Setter Property="Grid.Column" Value="2" />
+    </Style>
+    <Style Selector="sh|RailView#Rail.drawer">
+      <Setter Property="Grid.Column" Value="0" />
+      <Setter Property="Grid.ColumnSpan" Value="3" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.28" Easing="0.16,1,0.3,1" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="sh|RailView#Rail.drawer Border#Root">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ShadowLg}" />
+    </Style>
+    <Style Selector="sh|RailView#Rail c|Backdrop#Glass">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="sh|RailView#Rail.drawer c|Backdrop#Glass">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Border#Scrim">
+      <Setter Property="Background" Value="{DynamicResource Scrim}" />
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="Transitions">
+        <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.28" Easing="0.4,0.2,0.2,1" /></Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border#Scrim.open">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+    </Style>
+  </Window.Styles>
+  <Panel Name="Root">
+    <Panel IsHitTestVisible="False">
+      <Border Background="{DynamicResource Bg0}" />
+      <Border>
+        <Border.Background>
+          <RadialGradientBrush Center="85%,-20%" GradientOrigin="85%,-20%" RadiusX="900" RadiusY="500">
+            <GradientStop Offset="0" Color="{DynamicResource AccentSofterColor}" />
+            <GradientStop Offset="0.6" Color="Transparent" />
+          </RadialGradientBrush>
+        </Border.Background>
+      </Border>
+      <Border>
+        <Border.Background>
+          <RadialGradientBrush Center="-10%,110%" GradientOrigin="-10%,110%" RadiusX="700" RadiusY="400">
+            <GradientStop Offset="0" Color="{DynamicResource BackdropGlow2Color}" />
+            <GradientStop Offset="0.6" Color="Transparent" />
+          </RadialGradientBrush>
+        </Border.Background>
+      </Border>
+    </Panel>
+    <Grid RowDefinitions="64,*,76" c:Backdrop.IsSource="True">
+      <Grid Name="Main" Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ClipToBounds="True" c:Backdrop.IsSource="True">
+        <sh:SidebarView Name="Sidebar" DataContext="{Binding Sidebar}" />
+        <ScrollViewer Name="ContentScroll" Grid.Column="1" HorizontalScrollBarVisibility="Disabled" Focusable="False" c:Backdrop.IsSource="True">
+          <ContentControl Name="PageHost" Content="{Binding Page}" />
+        </ScrollViewer>
+        <Border Name="Scrim" Grid.ColumnSpan="3" />
+        <sh:RailView Name="Rail" DataContext="{Binding Rail}" />
+      </Grid>
+      <sh:TopBarView Name="TopBar" Grid.RowSpan="3" DataContext="{Binding TopBar}" ZIndex="50" />
+      <sh:PlayerBarView Name="PlayerBar" Grid.Row="2" DataContext="{Binding Player}" ZIndex="40" />
+    </Grid>
+    <ov:OverlaysView Name="Overlays" />
+  </Panel>
+</Window>

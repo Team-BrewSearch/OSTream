@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OSTream.ViewModels"
+              xmlns:c="using:OSTream.Frontend.Controls"
+             xmlns:comp="using:OSTream.Views.Components"
+             x:Class="OSTream.Views.Pages.AlbumPageView"
+             x:DataType="vm:AlbumPageViewModel">
+  <StackPanel c:Entrance.Kind="fade-up">
+    <Panel Margin="0,0,0,16" MinHeight="32">
+      <Button Classes="text-link" HorizontalAlignment="Left" VerticalAlignment="Center" Command="{Binding BackCommand}">
+        <c:IconText Kind="Back" IconSize="12" Text="Back" />
+      </Button>
+    </Panel>
+    <comp:AlbumPanelView DataContext="{Binding Panel}" />
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,172 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:OSTream.ViewModels"
+              xmlns:fvm="using:OSTream.Frontend.ViewModels"
+               xmlns:c="using:OSTream.Frontend.Controls"
+              x:Class="OSTream.Views.Shell.SidebarView"
+              x:DataType="vm:SidebarViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.nav-item">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+      <Setter Property="Transitions" Value="{StaticResource FastTransitions}" />
+    </Style>
+    <Style Selector="Button.nav-item c|Icon.nav-icon">
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="Button.nav-item:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Bg2}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+    <Style Selector="Button.nav-item:pointerover c|Icon.nav-icon">
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+    </Style>
+    <Style Selector="Button.nav-item.active">
+      <Setter Property="Background" Value="{DynamicResource NavActiveGradient}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+    <Style Selector="Button.nav-item.active c|Icon.nav-icon">
+      <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+    </Style>
+    <Style Selector="Border.nav-indicator">
+      <Setter Property="IsVisible" Value="False" />
+      <Setter Property="Width" Value="3" />
+      <Setter Property="CornerRadius" Value="0,3,3,0" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="BoxShadow" Value="{DynamicResource Glow8}" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Margin" Value="-22,1,0,1" />
+    </Style>
+    <Style Selector="Button.nav-item.active Border.nav-indicator">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Border.badge">
+      <Setter Property="Grid.Column" Value="2" />
+      <Setter Property="Padding" Value="6,1" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Background" Value="{DynamicResource Bg3}" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.badge > TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="Border.badge.live">
+      <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+    </Style>
+    <Style Selector="Border.badge.live > TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+    <Style Selector="StackPanel.nav-group">
+      <Setter Property="Margin" Value="0,0,0,18" />
+    </Style>
+    <Style Selector="DockPanel#Column">
+      <Setter Property="Margin" Value="12,18,12,14" />
+    </Style>
+    <Style Selector=":is(Control).compact DockPanel#Column">
+      <Setter Property="Margin" Value="10,18,10,14" />
+    </Style>
+    <Style Selector=":is(Control).mobile DockPanel#Column">
+      <Setter Property="Margin" Value="6,14" />
+    </Style>
+    <Style Selector=":is(Control).compact Button.nav-item">
+      <Setter Property="Width" Value="44" />
+      <Setter Property="Padding" Value="10" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector=":is(Control).mobile Button.nav-item">
+      <Setter Property="Width" Value="40" />
+    </Style>
+    <Style Selector=":is(Control).compact TextBlock.nav-text, :is(Control).compact TextBlock.nav-label, :is(Control).compact Panel.sidebar-queue">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector=":is(Control).compact Border.nav-indicator">
+      <Setter Property="Margin" Value="-20,-1,0,-1" />
+    </Style>
+    <Style Selector=":is(Control).compact Border.badge">
+      <Setter Property="Padding" Value="4,0" />
+      <Setter Property="Margin" Value="0,-8,-10,0" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="Grid.Column" Value="0" />
+      <Setter Property="Grid.ColumnSpan" Value="3" />
+    </Style>
+    <Style Selector=":is(Control).compact Border.badge > TextBlock">
+      <Setter Property="FontSize" Value="9" />
+    </Style>
+    <Style Selector=":is(Control).compact StackPanel.nav-group">
+      <Setter Property="Margin" Value="0,0,0,10" />
+    </Style>
+  </UserControl.Styles>
+  <UserControl.DataTemplates>
+    <DataTemplate x:DataType="fvm:NavItemViewModel">
+      <Button Classes="nav-item" Classes.active="{Binding IsActive}" Command="{Binding GoCommand}" CommandParameter="{Binding Path}"
+              ToolTip.Tip="{Binding Tip}" AutomationProperties.Name="{Binding Label}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Border Classes="nav-indicator" />
+          <c:Icon Classes="nav-icon" Kind="{Binding Icon}" Size="16" />
+          <TextBlock Classes="nav-text" Grid.Column="1" Text="{Binding Label}" Margin="11,0,0,0" VerticalAlignment="Center" />
+          <Border Classes="badge" Classes.live="{Binding LiveBadge}" IsVisible="{Binding HasBadge}">
+            <TextBlock Text="{Binding Badge}" />
+          </Border>
+        </Grid>
+      </Button>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+  <Border Name="Root" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border1}" BorderThickness="0,0,1,0">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <DockPanel Name="Column" LastChildFill="False">
+        <StackPanel DockPanel.Dock="Top" Classes="nav-group">
+          <TextBlock Classes="label nav-label" Text="LIBRARY" Margin="10,0,10,8" />
+          <ItemsControl ItemsSource="{Binding Library}" />
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Top" Classes="nav-group">
+          <TextBlock Classes="label nav-label" Text="COLLECTION" Margin="10,0,10,8" />
+          <ItemsControl ItemsSource="{Binding Collection}" />
+        </StackPanel>
+        <Panel DockPanel.Dock="Bottom" Classes="sidebar-queue">
+          <Border IsVisible="{Binding HasQueue}" c:Entrance.Kind="fade-up"
+                  BorderBrush="{DynamicResource Border1}" BorderThickness="0,1,0,0" Padding="10,14,10,4">
+            <StackPanel>
+              <TextBlock Classes="label" Text="ACTIVE QUEUE" Margin="0,0,0,12" />
+              <ItemsControl ItemsSource="{Binding QueueRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:QueueRow">
+                    <StackPanel>
+                      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,5">
+                        <TextBlock Classes="ellipsis" Text="{Binding Title}" FontSize="11.5" ToolTip.Tip="{Binding Title}"
+                                   Foreground="{DynamicResource Text2}" Classes.pending="{Binding Pending}" />
+                        <TextBlock Grid.Column="1" Classes="mono" Text="{Binding Value}" FontSize="10.5" Margin="8,0,0,0" Foreground="{DynamicResource Accent2}"
+                                   Classes.pending="{Binding Pending}" />
+                      </Grid>
+                      <c:ProgressFill Height="3" Margin="0,0,0,12" Value="{Binding Percent, Converter={x:Static c:Converters.Percent}}"
+                                      Track="{DynamicResource Bg3}" Fill="{DynamicResource AccentGradient}" FillShadow="{DynamicResource Glow8}"
+                                      IsVisible="{Binding !Pending}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                <ItemsControl.Styles>
+                  <Style Selector="TextBlock.pending">
+                    <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+                    <Setter Property="FontSize" Value="11" />
+                  </Style>
+                </ItemsControl.Styles>
+              </ItemsControl>
+              <Button Classes="text-link" HorizontalAlignment="Left" Padding="0,2,0,0" IsVisible="{Binding HasMore}"
+                      Command="{Binding GoCommand}" CommandParameter="/downloads">
+                <TextBlock Text="{Binding MoreText}" FontSize="11" />
+              </Button>
+            </StackPanel>
+          </Border>
+        </Panel>
+      </DockPanel>
+    </ScrollViewer>
+  </Border>
+</UserControl>

@@ -1,0 +1,174 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OSTream.ViewModels"
+              xmlns:c="using:OSTream.Frontend.Controls"
+             xmlns:comp="using:OSTream.Views.Components"
+             x:Class="OSTream.Views.Shell.RailView"
+             x:DataType="vm:RailViewModel">
+  <UserControl.Styles>
+    <Style Selector="StackPanel.rail-empty">
+      <Setter Property="Margin" Value="12,36" />
+      <Setter Property="Spacing" Value="8" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="StackPanel.rail-empty > TextBlock">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="StackPanel.rail-empty > TextBlock.b">
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+    </Style>
+    <Style Selector="StackPanel.rail-empty > c|Icon">
+      <Setter Property="Foreground" Value="{DynamicResource Border3}" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.upnext-item">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="6" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Transitions" Value="{StaticResource FastTransitions}" />
+    </Style>
+    <Style Selector="Button.upnext-item:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Bg2}" />
+    </Style>
+    <Style Selector="Button.upnext-item.current, Button.upnext-item.current:pointerover">
+      <Setter Property="Background" Value="{DynamicResource AccentSofter}" />
+      <Setter Property="Cursor" Value="Arrow" />
+      <Setter Property="Margin" Value="0,0,0,14" />
+    </Style>
+    <Style Selector="Button.upnext-item.current TextBlock.t">
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+    <Style Selector="Button.upnext-item Button.rm">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="Button.upnext-item:pointerover Button.rm, Button.upnext-item Button.rm:focus-visible">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.upnext-item Button.rm:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Bg3}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+    <Style Selector="Button.upnext-clear">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="Button.upnext-clear:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+  </UserControl.Styles>
+  <UserControl.DataTemplates>
+    <DataTemplate x:DataType="vm:UpNextItemViewModel">
+      <Button Classes="upnext-item" AutomationProperties.Name="{Binding Title}" Classes.current="{Binding IsCurrent}" Command="{Binding JumpCommand}">
+        <Grid ColumnDefinitions="36,*,Auto">
+          <c:ArtView Width="36" Height="36" CornerRadius="6" Source="{Binding Thumb}" Seed="{Binding Seed}" GlyphSize="14" />
+          <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center" Spacing="1">
+            <TextBlock Classes="t ellipsis" Text="{Binding Title}" FontSize="12" FontWeight="Medium" />
+            <TextBlock Classes="ellipsis mono" Text="{Binding Sub}" FontSize="10.5" Foreground="{DynamicResource Text3}" />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="rm" IsVisible="{Binding !IsCurrent}" Command="{Binding RemoveCommand}" ToolTip.Tip="Remove from up next">
+            <c:Icon Kind="X" Size="12" />
+          </Button>
+        </Grid>
+      </Button>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+  <Panel>
+    <c:Backdrop Name="Glass" Tint="{DynamicResource Popover}" Under="{DynamicResource Scrim}" Blur="24" />
+    <Border Name="Root" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Border1}" BorderThickness="1,0,0,0" Padding="16,16,16,18">
+      <DockPanel>
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+          <Border Classes="segmented small">
+            <UniformGrid Rows="1" ColumnSpacing="2">
+              <Button Classes="seg" AutomationProperties.Name="Downloads" Classes.on="{Binding IsDownloadsTab}" Command="{Binding ShowTabCommand}" CommandParameter="downloads" HorizontalAlignment="Stretch">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="Downloads" VerticalAlignment="Center" />
+                  <TextBlock Classes="count" Text="{Binding DownloadsCount}" />
+                </StackPanel>
+              </Button>
+              <Button Classes="seg" AutomationProperties.Name="Up next" Classes.on="{Binding IsUpNextTab}" Command="{Binding ShowTabCommand}" CommandParameter="upnext" HorizontalAlignment="Stretch">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="Up next" VerticalAlignment="Center" />
+                  <TextBlock Classes="count" Text="{Binding UpNextCount}" />
+                </StackPanel>
+              </Button>
+            </UniformGrid>
+          </Border>
+          <Button Grid.Column="1" Classes="icon-btn small" Margin="8,0,0,0" Command="{Binding CloseCommand}" ToolTip.Tip="Close queue">
+            <c:Icon Kind="X" Size="14" />
+          </Button>
+        </Grid>
+        <DockPanel IsVisible="{Binding IsDownloadsTab}">
+          <Border DockPanel.Dock="Bottom" IsVisible="{Binding HasJobs}" Margin="0,12,0,0" Padding="4,14,4,2"
+                  BorderBrush="{DynamicResource Border1}" BorderThickness="0,1,0,0">
+            <StackPanel>
+              <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                <TextBlock Text="Overall progress" FontSize="11" Foreground="{DynamicResource Text2}" />
+                <TextBlock Grid.Column="1" Classes="mono" Text="{Binding OverallText}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource Accent2}" />
+              </Grid>
+              <c:ProgressFill Height="4" Value="{Binding OverallPercent, Converter={x:Static c:Converters.Percent}}"
+                              Track="{DynamicResource Bg3}" Fill="{DynamicResource AccentGradient}" FillShadow="{DynamicResource Glow8}" />
+              <UniformGrid Rows="1" ColumnSpacing="6" Margin="0,12,0,0">
+                <Button Classes="btn ghost sm" HorizontalAlignment="Stretch" Content="Clear finished" IsEnabled="{Binding CanClearFinished}" Command="{Binding ClearFinishedCommand}" />
+                <Button Classes="btn ghost sm" HorizontalAlignment="Stretch" Content="View all" Command="{Binding ViewAllCommand}" />
+              </UniformGrid>
+            </StackPanel>
+          </Border>
+          <ScrollViewer Margin="-6,0" Padding="6,0" HorizontalScrollBarVisibility="Disabled">
+            <Panel>
+              <StackPanel Classes="rail-empty" IsVisible="{Binding !HasJobs}">
+                <c:Icon Kind="Downloads" Size="28" />
+                <TextBlock Classes="b" Text="No downloads yet" />
+                <TextBlock Text="Use “Download all” on an album, or the download button on any track." />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding Jobs}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:JobCardViewModel">
+                    <comp:JobCardView />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Panel>
+          </ScrollViewer>
+        </DockPanel>
+        <ScrollViewer IsVisible="{Binding IsUpNextTab}" Margin="-6,0" Padding="6,0" HorizontalScrollBarVisibility="Disabled">
+          <Panel>
+            <StackPanel Classes="rail-empty" IsVisible="{Binding !HasNowPlaying}">
+              <c:Icon Kind="Queue" Size="28" />
+              <TextBlock Classes="b" Text="Nothing playing" />
+              <TextBlock Text="Play an album or track and what comes next shows up here." />
+            </StackPanel>
+            <StackPanel IsVisible="{Binding HasNowPlaying}">
+              <TextBlock Classes="label" Text="NOW PLAYING" Margin="4,4,4,8" />
+              <ContentControl Content="{Binding NowPlaying}" />
+              <Grid ColumnDefinitions="*,Auto" Margin="4,4,4,8">
+                <TextBlock Classes="label" Text="{Binding NextLabel}" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Classes="upnext-clear" Content="Clear" IsVisible="{Binding HasUpNext}" Command="{Binding ClearUpNextCommand}" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding UpNext}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+              <StackPanel Classes="rail-empty" Margin="12,20" IsVisible="{Binding !HasUpNext}">
+                <TextBlock Text="Nothing queued after this track." />
+              </StackPanel>
+            </StackPanel>
+          </Panel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Panel>
+</UserControl>

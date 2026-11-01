@@ -1,0 +1,260 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:OSTream.ViewModels"
+              xmlns:fvm="using:OSTream.Frontend.ViewModels"
+              xmlns:s="using:OSTream.Services"
+               xmlns:c="using:OSTream.Frontend.Controls"
+              xmlns:m="using:OSTream.Core.Models"
+              x:Class="OSTream.Views.Overlays.OverlaysView"
+              x:DataType="fvm:MainViewModel">
+  <UserControl.Styles>
+    <Style Selector="Border.toast">
+      <Setter Property="Padding" Value="12,10,10,10" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Background" Value="{DynamicResource Popover}" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ShadowPop}" />
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="0.4,0.2,0.2,1" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="0.4,0.2,0.2,1" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.toast.leaving">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="RenderTransform" Value="translateY(6px)" />
+    </Style>
+    <Style Selector="Border.toast-ic">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+    <Style Selector="Border.toast-ic.success">
+      <Setter Property="Background" Value="{DynamicResource GreenSoft}" />
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource Green}" />
+    </Style>
+    <Style Selector="Border.toast-ic.error">
+      <Setter Property="Background" Value="{DynamicResource RedSoft}" />
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource Red}" />
+    </Style>
+    <Style Selector="Button.toast-act">
+      <Setter Property="Padding" Value="8,5" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource Accent2}" />
+    </Style>
+    <Style Selector="Button.toast-act:pointerover">
+      <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+    </Style>
+    <Style Selector="Button.toast-close">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="Button.toast-close:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Bg3}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+    <Style Selector="Border#Menu">
+      <Setter Property="MinWidth" Value="210" />
+      <Setter Property="MaxWidth" Value="280" />
+      <Setter Property="Padding" Value="5" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ShadowPop}" />
+    </Style>
+    <Style Selector="Button.menu-item">
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="9,7" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+      <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+    <Style Selector="Button.menu-item c|Icon">
+      <Setter Property="Foreground" Value="{DynamicResource Text3}" />
+    </Style>
+    <Style Selector="Button.menu-item:pointerover, Button.menu-item:focus-visible">
+      <Setter Property="Background" Value="{DynamicResource Bg3}" />
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+    <Style Selector="Button.menu-item:pointerover c|Icon, Button.menu-item:focus-visible c|Icon">
+      <Setter Property="Foreground" Value="{DynamicResource Text2}" />
+    </Style>
+    <Style Selector="Button.menu-item.danger, Button.menu-item.danger:pointerover, Button.menu-item.danger:focus-visible">
+      <Setter Property="Foreground" Value="{DynamicResource Red}" />
+    </Style>
+    <Style Selector="Button.menu-item.danger c|Icon">
+      <Setter Property="Foreground" Value="{DynamicResource Red}" />
+    </Style>
+    <Style Selector="Button.menu-item.danger:pointerover, Button.menu-item.danger:focus-visible">
+      <Setter Property="Background" Value="{DynamicResource RedSoft}" />
+    </Style>
+    <Style Selector="Border#Dialog">
+      <Setter Property="Width" Value="400" />
+      <Setter Property="Padding" Value="20" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Background" Value="{DynamicResource Popover}" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ShadowPop}" />
+    </Style>
+    <Style Selector="Button.lb-bar">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Foreground" Value="#d4d4dc" />
+    </Style>
+    <Style Selector="Button.lb-bar:pointerover">
+      <Setter Property="Background" Value="#1AFFFFFF" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.lb-nav">
+      <Setter Property="Width" Value="44" />
+      <Setter Property="Height" Value="44" />
+      <Setter Property="CornerRadius" Value="22" />
+      <Setter Property="Background" Value="#14FFFFFF" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.lb-nav:pointerover">
+      <Setter Property="Background" Value="#29FFFFFF" />
+    </Style>
+    <Style Selector="Button.lb-thumb">
+      <Setter Property="Width" Value="52" />
+      <Setter Property="Height" Value="52" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Opacity" Value="0.5" />
+      <Setter Property="Transitions">
+        <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.18" /></Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.lb-thumb:pointerover, Button.lb-thumb.current">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.lb-thumb.current /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BoxShadow" Value="0 0 0 2 #a78bfa" />
+    </Style>
+  </UserControl.Styles>
+  <Panel>
+    <Canvas Name="MenuLayer">
+      <Border Name="Menu" IsVisible="{Binding Menus.IsOpen}">
+        <Panel>
+          <c:Backdrop Tint="{DynamicResource Popover}" Blur="24" CornerRadius="10" Margin="-5" />
+          <ScrollViewer Name="MenuScroll" MaxHeight="400" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl Name="MenuItems" ItemsSource="{Binding Menus.Entries}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="s:MenuEntry">
+                  <Panel>
+                    <Border Height="1" Margin="4,5" Background="{DynamicResource Border1}" IsVisible="{Binding IsSeparator}" />
+                    <Button Classes="menu-item" AutomationProperties.Name="{Binding Label}" Classes.danger="{Binding Danger}" IsVisible="{Binding IsItem}"
+                             Command="{Binding $parent[UserControl].((fvm:MainViewModel)DataContext).Menus.ChooseCommand}" CommandParameter="{Binding}">
+                      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                        <c:Icon Kind="{Binding Icon}" Size="14" Margin="0,0,10,0" />
+                        <TextBlock Grid.Column="1" Classes="ellipsis" Text="{Binding Label}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Classes="mono" Text="{Binding Hint}" FontSize="10.5" Foreground="{DynamicResource Text3}"
+                                   Margin="10,0,0,0" VerticalAlignment="Center" IsVisible="{Binding HasHint}" />
+                        <c:Icon Grid.Column="3" Kind="ChevronRight" Size="13" Margin="10,0,0,0" IsVisible="{Binding HasSubmenu}" />
+                      </Grid>
+                    </Button>
+                  </Panel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Panel>
+      </Border>
+    </Canvas>
+    <ItemsControl Name="Toasts" ItemsSource="{Binding Toasts.Items}" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                  Margin="16,0,16,92" MaxWidth="460" Width="460">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="s:ToastItem">
+          <Border Classes="toast" Classes.leaving="{Binding IsLeaving}" c:Entrance.Kind="fade-up">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+              <Border Classes="toast-ic" Classes.success="{Binding Kind, Converter={x:Static c:Converters.Equal}, ConverterParameter=Success}"
+                      Classes.error="{Binding Kind, Converter={x:Static c:Converters.Equal}, ConverterParameter=Error}" VerticalAlignment="Center">
+                <c:Icon Kind="{Binding Icon}" Size="{Binding IconSize}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Message}" FontSize="12.5" TextWrapping="Wrap" LineHeight="17.5" />
+                <TextBlock Text="{Binding Detail}" FontSize="11.5" Foreground="{DynamicResource Text3}" TextWrapping="Wrap" IsVisible="{Binding HasDetail}" />
+              </StackPanel>
+              <Button Grid.Column="2" Classes="toast-act" Content="{Binding Action.Label}" IsVisible="{Binding HasAction}" Command="{Binding RunCommand}"
+                      FontSize="12.5" Margin="0,0,10,0" VerticalAlignment="Center" />
+              <Button Grid.Column="3" Classes="toast-close" Command="{Binding DismissCommand}" ToolTip.Tip="Dismiss" VerticalAlignment="Center">
+                <c:Icon Kind="X" Size="12" />
+              </Button>
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Panel Name="DialogLayer" Background="Transparent" IsVisible="{Binding Dialogs.Current, Converter={x:Static ObjectConverters.IsNotNull}}" c:Entrance.Kind="fade-up">
+      <c:Backdrop Tint="{DynamicResource Scrim}" Blur="4" />
+      <Border Name="Dialog" Margin="16" DataContext="{Binding Dialogs.Current}" x:DataType="s:DialogViewModel" c:Entrance.Kind="pop-in"
+              HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel>
+          <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Message}" FontSize="12.5" Foreground="{DynamicResource Text2}" Margin="0,0,0,14" TextWrapping="Wrap" IsVisible="{Binding HasMessage}" />
+          <TextBox Name="DialogInput" Classes="input" Text="{Binding Value}" PlaceholderText="{Binding Placeholder}" MaxLength="120"
+                   Margin="0,4,0,16" IsVisible="{Binding IsPrompt}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="btn ghost" Content="Cancel" Command="{Binding CancelCommand}" />
+            <Button Name="DialogConfirm" Classes="btn" Classes.primary="{Binding !Danger}" Classes.secondary="{Binding Danger}" Classes.danger="{Binding Danger}"
+                    Content="{Binding ConfirmLabel}" Command="{Binding ConfirmCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Panel>
+    <Panel Name="LightboxLayer" Background="Transparent" IsVisible="{Binding Lightbox.Current, Converter={x:Static ObjectConverters.IsNotNull}}"
+           c:Entrance.Kind="fade-up" TextElement.Foreground="#f4f4f7">
+      <c:Backdrop Tint="#E6040408" Blur="8" />
+      <DockPanel DataContext="{Binding Lightbox.Current}" x:DataType="s:LightboxViewModel">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto,Auto" Margin="16,14">
+          <TextBlock Classes="mono" Text="{Binding Counter}" FontSize="12" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="lb-bar" Command="{Binding OpenOriginalCommand}" ToolTip.Tip="Open original image">
+            <c:Icon Kind="External" Size="15" />
+          </Button>
+          <Button Grid.Column="3" Name="LightboxClose" Classes="lb-bar" Margin="10,0,0,0" Command="{Binding CloseCommand}" ToolTip.Tip="Close">
+            <c:Icon Kind="X" Size="16" />
+          </Button>
+        </Grid>
+        <ScrollViewer DockPanel.Dock="Bottom" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" IsVisible="{Binding HasMany}"
+                      HorizontalAlignment="Center" Margin="16,0,16,16">
+          <ItemsControl ItemsSource="{Binding Images}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="m:AlbumImage">
+                <Button Classes="lb-thumb" AutomationProperties.Name="Show this image" Command="{Binding $parent[DockPanel].((s:LightboxViewModel)DataContext).SelectCommand}" CommandParameter="{Binding}">
+                  <c:ArtView Width="52" Height="52" CornerRadius="6" Source="{Binding Thumb}" Seed="lightbox" />
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <Panel Name="LightboxStage" Margin="64,0,64,24" Background="Transparent">
+          <c:Spinner Name="LightboxSpinner" Size="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <Border Name="LightboxFrame" CornerRadius="8" ClipToBounds="True" BoxShadow="0 20 60 0 #99000000"
+                  HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Image Name="LightboxImage" Stretch="Uniform" />
+          </Border>
+          <Button Classes="lb-nav" HorizontalAlignment="Left" Margin="-52,0,0,0" IsVisible="{Binding HasMany}" Command="{Binding PrevCommand}" ToolTip.Tip="Previous image">
+            <c:Icon Kind="ChevronLeft" Size="18" />
+          </Button>
+          <Button Classes="lb-nav" HorizontalAlignment="Right" Margin="0,0,-52,0" IsVisible="{Binding HasMany}" Command="{Binding NextCommand}" ToolTip.Tip="Next image">
+            <c:Icon Kind="ChevronRight" Size="18" />
+          </Button>
+        </Panel>
+      </DockPanel>
+    </Panel>
+  </Panel>
+</UserControl>
