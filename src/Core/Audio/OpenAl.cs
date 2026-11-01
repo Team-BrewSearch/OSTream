@@ -97,7 +97,7 @@ internal static partial class OpenAl
         return value;
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate IntPtr ReopenDeviceDelegate(IntPtr device, IntPtr deviceName, IntPtr attributes);
+    private delegate byte ReopenDeviceDelegate(IntPtr device, IntPtr deviceName, IntPtr attributes);
     private static ReopenDeviceDelegate? _reopen;
     public static bool ReopenDeviceIfNeeded(IntPtr device)
     {
@@ -116,7 +116,7 @@ internal static partial class OpenAl
 
             _reopen = (ReopenDeviceDelegate)Marshal.GetDelegateForFunctionPointer(ptr, typeof(ReopenDeviceDelegate));
         }
-        return _reopen(device, IntPtr.Zero, IntPtr.Zero) != IntPtr.Zero;
+        return _reopen(device, IntPtr.Zero, IntPtr.Zero) != 0;
     }
     public static bool HasAlcExtension(IntPtr device, string name)
     {

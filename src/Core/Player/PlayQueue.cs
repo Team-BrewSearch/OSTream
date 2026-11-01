@@ -113,7 +113,12 @@ public sealed class PlayQueue
         {
             if (shuffle)
             {
+                int finished = _order[Position];
                 _order = [.. Formatting.Shuffled(_order)];
+                if (_order.Count > 1 && _order[0] == finished)
+                {
+                    (_order[0], _order[1]) = (_order[1], _order[0]);
+                }
             }
 
             Position = 0;

@@ -10,7 +10,7 @@ namespace OSTream.Frontend.Services;
 internal sealed class DiscordPresenceService : IDisposable
 {
     private const string AppId = "1555014150030237777";
-    private const long ThrottleMs = 1000;
+    private const double PositionDriftThresholdSeconds = 2;
     private const int ReconnectDelayMs = 5000;
     private const int MaxReconnectDelayMs = 60000;
 
@@ -18,8 +18,8 @@ internal sealed class DiscordPresenceService : IDisposable
     private readonly ILogger _log;
     private DiscordRpcClient? _client;
     private bool _disposed;
-    private long _lastUpdateTicks;
-    private int _reconnectDelay;
+    private DateTime? _presenceStart;
+    private int _reconnectDelay = ReconnectDelayMs;
     private Timer? _reconnectTimer;
 
     public DiscordPresenceService(AppServices app, ILogger log)
@@ -147,19 +147,16 @@ internal sealed class DiscordPresenceService : IDisposable
 
     private void OnTimeChanged(PlaybackTime time)
     {
-        if (_client is null || !_client.IsInitialized)
+        if (_client is null || !_client.IsInitialized || _app.Player.Status != PlayStatus.Playing || _presenceStart is not { } start)
         {
             return;
         }
 
-        long now = Environment.TickCount64;
-        if (now - _lastUpdateTicks < ThrottleMs)
+        double expectedPosition = (DateTime.UtcNow - start).TotalSeconds;
+        if (Math.Abs(time.Current - expectedPosition) > PositionDriftThresholdSeconds)
         {
-            return;
+            UpdatePresence();
         }
-
-        _lastUpdateTicks = now;
-        UpdatePresence();
     }
 
     private void UpdatePresence()
@@ -175,10 +172,12 @@ internal sealed class DiscordPresenceService : IDisposable
             if (activity is null)
             {
                 _client.ClearPresence();
+                _presenceStart = null;
             }
             else
             {
                 _client.SetPresence(activity);
+                _presenceStart = activity.Timestamps?.Start;
             }
         }
         catch (Exception ex)

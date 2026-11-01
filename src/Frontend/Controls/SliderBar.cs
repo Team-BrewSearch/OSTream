@@ -136,8 +136,10 @@ public sealed class SliderBar : Control
 
         IsDragging = false;
         _hover = -1;
+        SetCurrentValue(ValueProperty, _dragValue);
         UpdateThumb();
         InvalidateVisual();
+        Commit?.Invoke(_dragValue);
     }
     protected override void OnPointerExited(PointerEventArgs e)
     {

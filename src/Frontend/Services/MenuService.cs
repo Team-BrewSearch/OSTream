@@ -58,6 +58,11 @@ public sealed partial class MenuService : ObservableObject
     [RelayCommand]
     public void Choose(MenuEntry entry)
     {
+        if (entry.Run == GoBack)
+        {
+            GoBack();
+            return;
+        }
         if (entry.Submenu is { } submenu)
         {
             _stack.Push(Entries!);

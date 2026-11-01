@@ -13,8 +13,8 @@ public sealed class IconText : StackPanel
     public static readonly StyledProperty<double> IconSizeProperty = AvaloniaProperty.Register<IconText, double>(nameof(IconSize), 13);
     public static readonly StyledProperty<string?> TextProperty = AvaloniaProperty.Register<IconText, string?>(nameof(Text));
     public static readonly StyledProperty<string?> SuffixProperty = AvaloniaProperty.Register<IconText, string?>(nameof(Suffix));
-    private readonly Icon _icon = new() { VerticalAlignment = VerticalAlignment.Center };
-    private readonly TextBlock _text = new() { VerticalAlignment = VerticalAlignment.Center };
+    private readonly Icon _icon = new() { VerticalAlignment = VerticalAlignment.Center, IsVisible = false };
+    private readonly TextBlock _text = new() { VerticalAlignment = VerticalAlignment.Center, IsVisible = false };
     private readonly TextBlock _suffix = new() { VerticalAlignment = VerticalAlignment.Center, Classes = { "muted" }, IsVisible = false };
     static IconText()
     {

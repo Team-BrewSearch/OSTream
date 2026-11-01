@@ -49,6 +49,10 @@ public class ArtView : Border
         }
         else if (change.Property == SourceProperty || change.Property == SharpenProperty)
         {
+            if (change.Property == SourceProperty && Seed is null)
+            {
+                UpdateBackground();
+            }
             _ = Reload();
         }
         else if (change.Property == BoundsProperty && !string.IsNullOrEmpty(Source) && (_shown is null || DecodeWidth > _decodedWidth * 1.25))
