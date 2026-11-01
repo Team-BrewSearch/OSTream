@@ -22,6 +22,67 @@ byte[] overlapping = Stream(Enumerable.Repeat(pattern, 2048).SelectMany(x => x).
 RejectOverlapping("read", decoder => decoder.Read(new float[2]));
 RejectOverlapping("seek", decoder => { decoder.Seek(0); return 0; });
 
+// Seek-table entries must be complete, even when the stream reports a larger length.
+byte[] point = new byte[18];
+RejectSeekTable("declared length exceeds stream", 0xffffff, point, false);
+RejectSeekTable("EOF after complete point", 36, point, true);
+RejectSeekTable("partial point", 36, point.Concat(new byte[17]).ToArray(), true);
+RejectSeekTable("missing trailing bytes", 19, point, true);
+try
+{
+    using var stream = new ChunkedStream(SeekTable(36, point, []), 0, false);
+    using var decoder = new FlacDecoder(stream);
+    throw new Exception("Non-seekable stream accepted a truncated seek table.");
+}
+catch (InvalidDataException)
+{
+    Console.WriteLine("PASS truncated seek table on non-seekable stream");
+}
+
+// A placeholder and the existing tolerated trailing byte must not change the first frame.
+byte[] first = Header(16).Concat(new byte[] { 0, 16, 0, 8, 0, 0 }).ToArray();
+byte[] validPoint = point.ToArray();
+System.Buffers.Binary.BinaryPrimitives.WriteUInt64BigEndian(validPoint, 1);
+System.Buffers.Binary.BinaryPrimitives.WriteUInt64BigEndian(validPoint.AsSpan(8), (ulong)first.Length);
+byte[] placeholder = Enumerable.Repeat((byte)0xff, 8).Concat(new byte[10]).ToArray();
+byte[] table = validPoint.Concat(placeholder).Concat(new byte[] { 0 }).ToArray();
+using (var decoder = new FlacDecoder(new ChunkedStream(SeekTable(table.Length, table, first.Concat(good).ToArray()), 0, true)))
+{
+    decoder.Seek(1);
+    float[] output = new float[32];
+    if (decoder.Read(output) != 15 || output[0] != 0.25f || output[1] != 0.5f)
+        throw new Exception("Valid seek table did not preserve seeking and audio.");
+}
+Console.WriteLine("PASS valid seek table with fragmented reads");
+using (var decoder = new FlacDecoder(new ChunkedStream(SeekTable(table.Length, table, good), 0, false)))
+{
+    float[] output = new float[32];
+    if (decoder.Read(output) != 16 || output[0] != 0.25f)
+        throw new Exception("Non-seekable stream did not decode valid audio.");
+}
+Console.WriteLine("PASS valid seek table on non-seekable stream");
+
+void RejectSeekTable(string name, int declaredLength, byte[] data, bool overstateLength)
+{
+    byte[] fixture = SeekTable(declaredLength, data, []);
+    using var stream = new ChunkedStream(fixture, overstateLength ? declaredLength : 0, true);
+    try { using var decoder = new FlacDecoder(stream); }
+    catch (InvalidDataException)
+    {
+        Console.WriteLine($"PASS truncated seek table ({name})");
+        return;
+    }
+    throw new Exception($"{name}: truncated seek table was accepted");
+}
+
+static byte[] SeekTable(int declaredLength, byte[] data, byte[] frames)
+{
+    byte[] metadata = Stream([]);
+    metadata[4] = 0;
+    byte[] header = [0x83, (byte)(declaredLength >> 16), (byte)(declaredLength >> 8), (byte)declaredLength];
+    return metadata.Concat(header).Concat(data).Concat(frames).ToArray();
+}
+
 void RejectOverlapping(string name, Func<FlacDecoder, int> action)
 {
     using var decoder = new FlacDecoder(new MemoryStream(overlapping));
@@ -60,4 +121,11 @@ static byte[] Header(int blockSize)
     }
     header[7] = crc;
     return header;
+}
+
+sealed class ChunkedStream(byte[] data, int extraLength, bool seekable) : MemoryStream(data)
+{
+    public override bool CanSeek => seekable;
+    public override long Length => seekable ? base.Length + extraLength : throw new NotSupportedException();
+    public override int Read(byte[] buffer, int offset, int count) => base.Read(buffer, offset, Math.Min(count, 3));
 }

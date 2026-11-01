@@ -56,9 +56,16 @@ public sealed class FlacDecoder : IAudioDecoder
             }
             else if (type == 3)
             {
+                if (_src.Stream.CanSeek && length > _src.Length - _src.Position)
+                {
+                    throw new InvalidDataException("Truncated FLAC seek table.");
+                }
                 for (int i = 0; i + 18 <= length; i += 18)
                 {
-                    _ = _src.Read(point);
+                    if (_src.Read(point) != point.Length)
+                    {
+                        throw new InvalidDataException("Truncated FLAC seek table.");
+                    }
                     long sample = (long)System.Buffers.Binary.BinaryPrimitives.ReadUInt64BigEndian(point);
                     long offset = (long)System.Buffers.Binary.BinaryPrimitives.ReadUInt64BigEndian(point[8..]);
                     if (sample != -1)
@@ -66,7 +73,11 @@ public sealed class FlacDecoder : IAudioDecoder
                         _seekPoints.Add((sample, offset));
                     }
                 }
-                _src.SkipLong(length % 18);
+                int remainder = length % 18;
+                if (_src.Read(point[..remainder]) != remainder)
+                {
+                    throw new InvalidDataException("Truncated FLAC seek table.");
+                }
             }
             else
             {
