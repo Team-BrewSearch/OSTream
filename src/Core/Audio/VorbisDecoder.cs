@@ -1,4 +1,3 @@
-using NVorbis;
 using System;
 using System.IO;
 namespace OSTream.Core.Audio;
@@ -10,7 +9,7 @@ public sealed class VorbisDecoder : IAudioDecoder
         [], [0], [0, 1], [0, 2, 1], [0, 1, 2, 3], [0, 2, 1, 3, 4], [0, 2, 1, 5, 3, 4], [0, 2, 1, 6, 5, 3, 4], [0, 2, 1, 7, 5, 6, 3, 4],
     ];
     private readonly Stream _stream;
-    private readonly VorbisReader _reader;
+    private readonly SafeVorbisReader _reader;
     private readonly int _streamChannels;
     private readonly float[] _samples = [];
     private readonly float[] _ordered = [];
@@ -20,7 +19,7 @@ public sealed class VorbisDecoder : IAudioDecoder
         _stream = stream;
         try
         {
-            _reader = new VorbisReader(stream, closeOnDispose: true);
+            _reader = new SafeVorbisReader(stream);
             _streamChannels = _reader.Channels;
             SampleRate = _reader.SampleRate;
             TotalFrames = Math.Max(0, _reader.TotalSamples);
